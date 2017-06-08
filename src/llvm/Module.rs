@@ -32,7 +32,40 @@ impl<'a> Clone for Module<'a>
 
 impl<'a> Module<'a>
 {
-	// ParseIRFile
+	#[inline(always)]
+	pub fn optimiseAndWriteToMemory<'b>(&self) -> Result<MemoryBuffer<'b>, ModuleOptimisationFailure>
+	{
+		match self.createFunctionPassManager().map(|manager| manager.runPassesOnModule())
+		{
+			Err(error) => Err(ModuleOptimisationFailure::FunctionPass(error)),
+			Ok(_) =>
+			{
+				match InterProceduralOptimisationPassManager::create().map(|manager| manager.runPassesOnModule(self))
+				{
+					Err(error) => Err(ModuleOptimisationFailure::InterProceduralOptimisationPass(error)),
+					Ok(_) =>
+					{
+						let memoryBufferReference = unsafe { LLVMWriteBitcodeToMemoryBuffer(self.reference) };
+						if unlikely(memoryBufferReference.is_null())
+						{
+							Err(ModuleOptimisationFailure::WriteToMemory)
+						}
+						else
+						{
+							Ok
+							(
+								MemoryBuffer
+								{
+									reference: memoryBufferReference,
+									slice: None,
+								}
+							)
+						}
+					}
+				}
+			}
+		}
+	}
 	
 	#[inline(always)]
 	fn verify(&self) -> Result<(), String>
