@@ -2,11 +2,15 @@
 // Copyright © 2017 The developers of predicator. See the COPYRIGHT file in the top-level directory of this distribution and at https://raw.githubusercontent.com/lemonrock/predicator/master/COPYRIGHT.
 
 
+include!("handle_boolean_and_error_message.rs");
+include!("panic_on_false.rs");
+
 
 use ::libc::c_char;
 use ::libc::c_void;
 use ::llvm_sys::analysis::LLVMVerifyModule;
 use ::llvm_sys::analysis::LLVMVerifierFailureAction;
+use ::llvm_sys::bit_reader::*;
 use ::llvm_sys::execution_engine::LLVMCreateMCJITCompilerForModule;
 use ::llvm_sys::execution_engine::LLVMDisposeExecutionEngine;
 use ::llvm_sys::execution_engine::LLVMExecutionEngineRef;
@@ -31,43 +35,6 @@ use ::std::mem::transmute;
 use ::std::mem::zeroed;
 use ::std::ptr::null_mut;
 
-
-macro_rules! handle_boolean_and_error_message
-{
-	($boolean: ident, $errorMessage: ident, $functionName: ident) =>
-	{
-		{
-			if $crate::rust_extra::unlikely(!$errorMessage.is_null())
-			{
-				if $crate::rust_extra::unlikely($boolean != 0)
-				{
-					let message = format!("{}:{:?}", stringify!($functionName), unsafe { ::std::ffi::CStr::from_ptr($errorMessage) });
-					unsafe { $crate::llvm_sys::core::LLVMDisposeMessage($errorMessage) };
-					return Err(message)
-				}
-				unsafe { $crate::llvm_sys::core::LLVMDisposeMessage($errorMessage) };
-			}
-			if $crate::rust_extra::unlikely($boolean != 0)
-			{
-				return Err(format!("{}:(unknown)", stringify!($functionName)))
-			}
-		}
-	}
-}
-
-
-macro_rules! panic_on_false
-{
-	($boolean: ident, $functionName: ident) =>
-	{
-		{
-			if $crate::rust_extra::unlikely($boolean != 0)
-			{
-				panic!("{}:(unknown)", stringify!($functionName));
-			}
-		}
-	}
-}
 
 pub struct PerThreadContext
 {
@@ -113,8 +80,6 @@ impl PerThreadContext
 	
 	// See also LLVMGetBitcodeModuleInContext2 and  LLVMParseBitcodeInContext2
 	// in http://www.llvm.org/docs/doxygen/html/group__LLVMCBitReader.html
-	// Also: llvm_sys::ir_reader::LLVMParseIRInContext  http://rustdoc.taricorp.net/llvm-sys/llvm_sys/ir_reader/fn.LLVMParseIRInContext.html
-	// - reads IR from a memory buffer
 	
 	#[inline(always)]
 	pub fn createModule<'a>(&'a self, name: String) -> Module<'a>
@@ -129,7 +94,43 @@ impl PerThreadContext
 	}
 	
 	#[inline(always)]
-	pub fn parseModule<'a, 'b>(&'a self, memoryBuffer: &MemoryBuffer<'b>) -> Result<Module<'a>, String>
+	pub fn loadBitCodeIntoModule<'a, 'b>(&'a self, memoryBuffer: &MemoryBuffer<'b>) -> Result<Module<'a>, String>
+	{
+		let mut moduleReference = unsafe { uninitialized() };
+		
+		let boolean = unsafe { LLVMGetBitcodeModuleInContext2(self.reference, memoryBuffer.reference, &mut moduleReference) };
+		panic_on_false!(boolean, LLVMGetBitcodeModuleInContext2);
+		
+		Ok
+		(
+			Module
+			{
+				reference: moduleReference,
+				parent: self,
+			}
+		)
+	}
+	
+	#[inline(always)]
+	pub fn parseBitCodeIntoModule<'a, 'b>(&'a self, memoryBuffer: &MemoryBuffer<'b>) -> Result<Module<'a>, String>
+	{
+		let mut moduleReference = unsafe { uninitialized() };
+		
+		let boolean = unsafe { LLVMParseBitcodeInContext2(self.reference, memoryBuffer.reference, &mut moduleReference) };
+		panic_on_false!(boolean, LLVMParseBitcodeInContext2);
+		
+		Ok
+		(
+			Module
+			{
+				reference: moduleReference,
+				parent: self,
+			}
+		)
+	}
+	
+	#[inline(always)]
+	pub fn parseTextualIntermediateRepresentationIntoModule<'a, 'b>(&'a self, memoryBuffer: &MemoryBuffer<'b>) -> Result<Module<'a>, String>
 	{
 		let mut moduleReference = unsafe { uninitialized() };
 		
