@@ -29,4 +29,5 @@ codegen-units = 1
 [dependencies]
 libc = "0.2"
 llvm-sys = "40.0.*"
+quick-error = "1.1"
 rust-extra = "0.0.13"

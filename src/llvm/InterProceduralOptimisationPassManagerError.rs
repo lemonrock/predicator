@@ -2,14 +2,29 @@
 // Copyright © 2017 The developers of predicator. See the COPYRIGHT file in the top-level directory of this distribution and at https://raw.githubusercontent.com/lemonrock/predicator/master/COPYRIGHT.
 
 
-#![allow(non_snake_case)]
-#![allow(non_upper_case_globals)]
-
-
-extern crate libc;
-extern crate llvm_sys;
-#[macro_use] extern crate quick_error;
-extern crate rust_extra;
-
-
-pub mod llvm;
+quick_error!
+{
+	#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+	pub enum InterProceduralOptimisationPassManagerError
+	{
+		CouldNotCreate
+		{
+			display("Could not create")
+		}
+		
+		ModuleInvalidBeforeRunningPasses(error: String)
+		{
+			display("Module invalid before running passes {:?}", error)
+		}
+		
+		CouldNotRunPassesOnModule
+		{
+			display("Could not run passes on module")
+		}
+		
+		ModuleInvalidAfterRunningPasses(error: String)
+		{
+			display("Module invalid after running passes {:?}", error)
+		}
+	}
+}

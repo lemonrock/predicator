@@ -44,6 +44,27 @@ impl<'a> Module<'a>
 	}
 	
 	#[inline(always)]
+	pub fn createFunctionPassManager<'b>(&'b self) -> Result<FunctionPassManager<'a, 'b>, FunctionPassManagerError>
+	{
+		let reference = unsafe { LLVMCreateFunctionPassManagerForModule(self.reference) };
+		if reference.is_null()
+		{
+			Err(FunctionPassManagerError::CouldNotCreate)
+		}
+		else
+		{
+			Ok
+			(
+				FunctionPassManager
+				{
+					reference: reference,
+					parent: self,
+				}
+			)
+		}
+	}
+	
+	#[inline(always)]
 	pub fn executionEngineMachineCodeJit<'b>(&'b self) -> Result<ExecutionEngine<'a, 'b>, String>
 	{
 		self.verify()?;
