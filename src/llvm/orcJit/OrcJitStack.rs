@@ -29,6 +29,7 @@ impl<'a> OrcJitStack<'a>
 		}
 	}
 	
+	/// NOTE: The API for this doesn't appear in some versions of the documentation
 	#[inline(always)]
 	pub fn addObjectFile<'b>(&'b self, objectFile: &ObjectFile, symbolResolver: LLVMOrcSymbolResolverFn, symbolResolverContext: *mut c_void) -> ModuleInOrcJitStack<'a, 'b>
 	{
