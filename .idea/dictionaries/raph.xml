@@ -65,6 +65,7 @@
       <w>pmemp</w>
       <w>pobj</w>
       <w>poolsize</w>
+      <w>predicator</w>
       <w>pthread</w>
       <w>pwait</w>
       <w>qkey</w>

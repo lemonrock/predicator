@@ -2,20 +2,39 @@
 // Copyright © 2017 The developers of predicator. See the COPYRIGHT file in the top-level directory of this distribution and at https://raw.githubusercontent.com/lemonrock/predicator/master/COPYRIGHT.
 
 
-pub struct ModuleAndOrcJitStack<'a, 'b, 'c>
-	where 'a: 'c, 'b: 'c
+pub struct ObjectFile
 {
-	reference: LLVMOrcModuleHandle,
-	parent: &'c OrcJitStack<'a>,
-	#[allow(dead_code)] parent2: &'c Module<'b>,
+	reference: LLVMObjectFileRef
 }
 
-impl<'a, 'b, 'c> Drop for ModuleAndOrcJitStack<'a, 'b, 'c>
-	where 'a: 'c, 'b: 'c
+impl Drop for ObjectFile
 {
 	#[inline(always)]
 	fn drop(&mut self)
 	{
-		unsafe { LLVMRemoveModule(self.parent.reference, self.reference) }
+		unsafe { LLVMDisposeObjectFile(self.reference) }
+	}
+}
+
+impl ObjectFile
+{
+	#[inline(always)]
+	pub fn create(memoryBuffer: &MemoryBuffer) -> Result<Self, ()>
+	{
+		let reference = unsafe { LLVMCreateObjectFile(memoryBuffer.reference) };
+		if reference.is_null()
+		{
+			Err(())
+		}
+		else
+		{
+			Ok
+			(
+				Self
+				{
+					reference: reference
+				}
+			)
+		}
 	}
 }

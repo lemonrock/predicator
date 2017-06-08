@@ -36,11 +36,22 @@ impl PerThreadContext
 	}
 	
 	#[inline(always)]
-	pub fn new() -> Self
+	pub fn new() -> Result<Self, ()>
 	{
-		Self
+		let reference = unsafe { LLVMContextCreate() };
+		if reference.is_null()
 		{
-			reference: unsafe { LLVMContextCreate() }
+			Err(())
+		}
+		else
+		{
+			Ok
+			(
+				Self
+				{
+					reference: reference
+				}
+			)
 		}
 	}
 	

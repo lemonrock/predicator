@@ -20,13 +20,61 @@ impl<'a> Drop for OrcJitStack<'a>
 impl<'a> OrcJitStack<'a>
 {
 	#[inline(always)]
-	pub fn eagerlyAddIrCode<'b, 'c>(&'c self, module: &'c Module<'b>, symbolResolver: LLVMOrcSymbolResolverFn, symbolResolverContext: *mut c_void) -> ModuleAndOrcJitStack<'a, 'b, 'c>
+	pub fn eagerlyAddIrCode<'b>(&'b self, module: &Module, symbolResolver: LLVMOrcSymbolResolverFn, symbolResolverContext: *mut c_void) -> ModuleInOrcJitStack<'a, 'b>
 	{
-		ModuleAndOrcJitStack
+		ModuleInOrcJitStack
 		{
 			reference: unsafe { LLVMOrcAddEagerlyCompiledIR(self.reference, module.reference, symbolResolver, symbolResolverContext) },
 			parent: self,
-			parent2: module,
 		}
+	}
+	
+	#[inline(always)]
+	pub fn addObjectFile<'b>(&'b self, objectFile: &ObjectFile, symbolResolver: LLVMOrcSymbolResolverFn, symbolResolverContext: *mut c_void) -> ModuleInOrcJitStack<'a, 'b>
+	{
+		ModuleInOrcJitStack
+		{
+			reference: unsafe { LLVMOrcAddObjectFile(self.reference, objectFile.reference, symbolResolver, symbolResolverContext) },
+			parent: self,
+		}
+	}
+	
+	#[inline(always)]
+	pub fn globalValuePointer<T: Sized>(&self, staticName: &str) -> *mut T
+	{
+		let address = self.getSymbolAddress(staticName);
+		if unlikely(address == 0)
+		{
+			null_mut()
+		}
+		else
+		{
+			unsafe { transmute(address) }
+		}
+	}
+	
+	#[inline(always)]
+	pub fn voidFunctionPointer(&self, functionName: &str) -> Option<extern "C" fn()>
+	{
+		let address = self.getSymbolAddress(functionName);
+		if unlikely(address == 0)
+		{
+			None
+		}
+		else
+		{
+			let functionPointer: extern "C" fn() = unsafe { transmute(address) };
+			
+			Some(functionPointer)
+		}
+	}
+	
+	/// 0 is not found
+	#[inline(always)]
+	fn getSymbolAddress(&self, symbolName: &str) -> LLVMOrcTargetAddress
+	{
+		let symbolNameCString = CString::new(symbolName).expect("Contains embedded NULs");
+		
+		unsafe { LLVMOrcGetSymbolAddress(self.reference, symbolNameCString.as_ptr()) }
 	}
 }

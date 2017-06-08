@@ -2,18 +2,19 @@
 // Copyright © 2017 The developers of predicator. See the COPYRIGHT file in the top-level directory of this distribution and at https://raw.githubusercontent.com/lemonrock/predicator/master/COPYRIGHT.
 
 
-use super::*;
-use ::libc::c_char;
-use ::libc::c_void;
-use ::rust_extra::unlikely;
-use ::std::ffi::CStr;
-use ::std::mem::transmute;
-use ::std::mem::uninitialized;
-use ::std::ptr::null_mut;
+pub struct ModuleInOrcJitStack<'a, 'b>
+	where 'a: 'b
+{
+	reference: LLVMOrcModuleHandle,
+	parent: &'b OrcJitStack<'a>,
+}
 
-
-include!("ModuleInOrcJitStack.rs");
-include!("ObjectFile.rs");
-include!("OrcJitStack.rs");
-include!("Target.rs");
-include!("TargetMachine.rs");
+impl<'a, 'c> Drop for ModuleInOrcJitStack<'a, 'c>
+	where 'a: 'c
+{
+	#[inline(always)]
+	fn drop(&mut self)
+	{
+		unsafe { LLVMRemoveModule(self.parent.reference, self.reference) }
+	}
+}

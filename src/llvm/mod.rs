@@ -15,6 +15,7 @@ use ::llvm_sys::execution_engine::LLVMCreateMCJITCompilerForModule;
 use ::llvm_sys::execution_engine::LLVMInitializeMCJITCompilerOptions;
 use ::llvm_sys::execution_engine::LLVMLinkInMCJIT;
 use ::llvm_sys::execution_engine::LLVMMCJITCompilerOptions;
+use ::llvm_sys::object::*;
 //use ::llvm_sys::execution_engine::LLVMRemoveModule as executionEngineRemoveModule;
 use ::llvm_sys::core::*;
 use ::llvm_sys::ir_reader::LLVMParseIRInContext;
