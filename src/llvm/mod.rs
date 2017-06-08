@@ -15,8 +15,9 @@ use ::llvm_sys::execution_engine::LLVMGetGlobalValueAddress;
 use ::llvm_sys::execution_engine::LLVMInitializeMCJITCompilerOptions;
 use ::llvm_sys::execution_engine::LLVMLinkInMCJIT;
 use ::llvm_sys::execution_engine::LLVMMCJITCompilerOptions;
-use ::llvm_sys::execution_engine::LLVMRemoveModule as executionEngineRemoveModule;
+//use ::llvm_sys::execution_engine::LLVMRemoveModule as executionEngineRemoveModule;
 use ::llvm_sys::core::*;
+use ::llvm_sys::ir_reader::LLVMParseIRInContext;
 use ::llvm_sys::orc::*;
 use ::llvm_sys::prelude::*;
 use ::llvm_sys::target::*;
@@ -126,6 +127,76 @@ impl PerThreadContext
 			parent: self,
 		}
 	}
+	
+	#[inline(always)]
+	pub fn parseModule<'a, 'b>(&'a self, memoryBuffer: &MemoryBuffer<'b>) -> Result<Module<'a>, String>
+	{
+		let mut moduleReference = unsafe { uninitialized() };
+		
+		let mut errorMessage = null_mut();
+		let boolean = unsafe { LLVMParseIRInContext(self.reference, memoryBuffer.reference, &mut moduleReference, &mut errorMessage) };
+		handle_boolean_and_error_message!(boolean, errorMessage, LLVMParseIRInContext);
+		
+		Ok
+		(
+			Module
+			{
+				reference: moduleReference,
+				parent: self,
+			}
+		)
+	}
+}
+
+pub struct MemoryBuffer<'a>
+{
+	reference: LLVMMemoryBufferRef,
+	#[allow(dead_code)] slice: Option<&'a [u8]>,
+}
+
+impl<'a> Drop for MemoryBuffer<'a>
+{
+	#[inline(always)]
+	fn drop(&mut self)
+	{
+		unsafe { LLVMDisposeMemoryBuffer(self.reference) }
+	}
+}
+
+impl<'a> MemoryBuffer<'a>
+{
+	#[inline(always)]
+	pub fn fromSlice(slice: &'a [u8]) -> Self
+	{
+		// "a\0"
+		static BufferName: [i8; 2] = [65, 0];
+		
+		Self
+		{
+			reference: unsafe { LLVMCreateMemoryBufferWithMemoryRange(slice.as_ptr() as *const c_char, slice.len(), BufferName.as_ptr(), 1) },
+			slice: Some(slice),
+		}
+	}
+	
+	#[inline(always)]
+	pub fn fromFile(filePath: &str) -> Result<Self, String>
+	{
+		let filePath = CString::new(filePath).expect("File path contains embedded NULs");
+		
+		let mut reference = unsafe { uninitialized() };
+		let mut errorMessage = null_mut();
+		let boolean = unsafe { LLVMCreateMemoryBufferWithContentsOfFile(filePath.as_ptr(), &mut reference, &mut errorMessage) };
+		handle_boolean_and_error_message!(boolean, errorMessage, LLVMParseIRInContext);
+		
+		Ok
+		(
+			Self
+			{
+				reference: reference,
+				slice: None,
+			}
+		)
+	}
 }
 
 pub struct Module<'a>
@@ -158,6 +229,8 @@ impl<'a> Clone for Module<'a>
 
 impl<'a> Module<'a>
 {
+	// ParseIRFile
+	
 	#[inline(always)]
 	fn verify(&self) -> Result<(), String>
 	{
@@ -203,7 +276,7 @@ pub struct ExecutionEngine<'a, 'b>
 where 'a: 'b
 {
 	reference: LLVMExecutionEngineRef,
-	parent: &'b Module<'a>,
+	#[allow(dead_code)] parent: &'b Module<'a>,
 }
 
 impl<'a, 'b> Drop for ExecutionEngine<'a, 'b>
@@ -230,7 +303,7 @@ impl<'a, 'b> ExecutionEngine<'a, 'b>
 where 'a: 'b
 {
 	#[inline(always)]
-	fn globalValuePointer<T: Sized>(&self, staticName: &str) -> *mut T
+	pub fn globalValuePointer<T: Sized>(&self, staticName: &str) -> *mut T
 	{
 		let staticNameCString = CString::new(staticName).expect("Contains embedded ASCII NULs");
 		let address = unsafe { LLVMGetGlobalValueAddress(self.reference, staticNameCString.as_ptr()) };
@@ -425,7 +498,7 @@ impl<'a> TargetMachine<'a>
 pub struct OrcJitStack<'a>
 {
 	reference: LLVMOrcJITStackRef,
-	parent: &'a Target,
+	#[allow(dead_code)] parent: &'a Target,
 }
 
 impl<'a> Drop for OrcJitStack<'a>
@@ -456,7 +529,7 @@ where 'a: 'c, 'b: 'c
 {
 	reference: LLVMOrcModuleHandle,
 	parent: &'c OrcJitStack<'a>,
-	parent2: &'c Module<'b>,
+	#[allow(dead_code)] parent2: &'c Module<'b>,
 }
 
 impl<'a, 'b, 'c> Drop for ModuleAndOrcJitStack<'a, 'b, 'c>
