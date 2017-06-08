@@ -5,8 +5,8 @@
 pub struct ExecutionEngine<'a, 'b>
 	where 'a: 'b
 {
-	reference: LLVMExecutionEngineRef,
-	#[allow(dead_code)] parent: &'b Module<'a>,
+	pub(crate) reference: LLVMExecutionEngineRef,
+	#[allow(dead_code)] pub(crate) parent: &'b Module<'a>,
 }
 
 impl<'a, 'b> Drop for ExecutionEngine<'a, 'b>
@@ -15,6 +15,7 @@ impl<'a, 'b> Drop for ExecutionEngine<'a, 'b>
 	#[inline(always)]
 	fn drop(&mut self)
 	{
+		//use ::llvm_sys::execution_engine::LLVMRemoveModule as executionEngineRemoveModule;
 		//		fn removeModule(executionEngineReference: LLVMExecutionEngineRef, moduleReference: LLVMModuleRef) -> Result<(), String>
 		//		{
 		//			let mut outReference = null_mut();
