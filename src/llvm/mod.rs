@@ -10,6 +10,8 @@ use ::llvm_sys::analysis::LLVMVerifierFailureAction;
 use ::llvm_sys::execution_engine::LLVMCreateMCJITCompilerForModule;
 use ::llvm_sys::execution_engine::LLVMDisposeExecutionEngine;
 use ::llvm_sys::execution_engine::LLVMExecutionEngineRef;
+use ::llvm_sys::execution_engine::LLVMGetFunctionAddress;
+use ::llvm_sys::execution_engine::LLVMGetGlobalValueAddress;
 use ::llvm_sys::execution_engine::LLVMInitializeMCJITCompilerOptions;
 use ::llvm_sys::execution_engine::LLVMLinkInMCJIT;
 use ::llvm_sys::execution_engine::LLVMMCJITCompilerOptions;
@@ -24,9 +26,47 @@ use ::std::ffi::CString;
 use ::std::ffi::CStr;
 use ::std::mem::uninitialized;
 use ::std::mem::size_of;
+use ::std::mem::transmute;
 use ::std::mem::zeroed;
 use ::std::ptr::null_mut;
 
+
+macro_rules! handle_boolean_and_error_message
+{
+	($boolean: ident, $errorMessage: ident, $functionName: ident) =>
+	{
+		{
+			if $crate::rust_extra::unlikely(!$errorMessage.is_null())
+			{
+				if $crate::rust_extra::unlikely($boolean != 0)
+				{
+					let message = format!("{}:{:?}", stringify!($functionName), unsafe { ::std::ffi::CStr::from_ptr($errorMessage) });
+					unsafe { $crate::llvm_sys::core::LLVMDisposeMessage($errorMessage) };
+					return Err(message)
+				}
+				unsafe { $crate::llvm_sys::core::LLVMDisposeMessage($errorMessage) };
+			}
+			if $crate::rust_extra::unlikely($boolean != 0)
+			{
+				return Err(format!("{}:(unknown)", stringify!($functionName)))
+			}
+		}
+	}
+}
+
+
+macro_rules! panic_on_false
+{
+	($boolean: ident, $functionName: ident) =>
+	{
+		{
+			if $crate::rust_extra::unlikely($boolean != 0)
+			{
+				panic!("{}:(unknown)", stringify!($functionName));
+			}
+		}
+	}
+}
 
 pub struct PerThreadContext
 {
@@ -49,14 +89,16 @@ impl PerThreadContext
 	{
 		unsafe { LLVMLinkInMCJIT() };
 		
-		let result = unsafe { LLVM_InitializeNativeTarget() };
-		debug_assert!(result == 0 || result == 1, "result was not 0 or 1 but '{}'", result);
-		if unlikely(result == 0)
-		{
-			panic!("Could not initialize native target");
-		}
+		let boolean = unsafe { LLVM_InitializeNativeTarget() };
+		panic_on_false!(boolean, LLVM_InitializeNativeTarget);
 		
 		unsafe { LLVM_InitializeAllTargetMCs() };
+		
+		let boolean = unsafe { LLVM_InitializeNativeAsmPrinter() };
+		panic_on_false!(boolean, LLVM_InitializeNativeAsmPrinter);
+		
+		let boolean = unsafe { LLVM_InitializeNativeAsmParser() };
+		panic_on_false!(boolean, LLVM_InitializeNativeAsmParser);
 	}
 	
 	#[inline(always)]
@@ -114,29 +156,6 @@ impl<'a> Clone for Module<'a>
 	}
 }
 
-macro_rules! handle_boolean_and_error_message
-{
-	($boolean: ident, $errorMessage: ident, $functionName: ident) =>
-	{
-		{
-			if $crate::rust_extra::unlikely(!$errorMessage.is_null())
-			{
-				if $crate::rust_extra::unlikely($boolean != 0)
-				{
-					let message = format!("{}:{:?}", stringify!($functionName), unsafe { ::std::ffi::CStr::from_ptr($errorMessage) });
-					unsafe { $crate::llvm_sys::core::LLVMDisposeMessage($errorMessage) };
-					return Err(message)
-				}
-				unsafe { $crate::llvm_sys::core::LLVMDisposeMessage($errorMessage) };
-			}
-			if $crate::rust_extra::unlikely($boolean != 0)
-			{
-				return Err(format!("{}:(unknown)", stringify!($functionName)))
-			}
-		}
-	}
-}
-
 impl<'a> Module<'a>
 {
 	#[inline(always)]
@@ -149,7 +168,7 @@ impl<'a> Module<'a>
 	}
 
 	#[inline(always)]
-	pub fn executionEngineMcJit<'b>(&'b self) -> Result<ExecutionEngine<'a, 'b>, String>
+	pub fn executionEngineMachineCodeJit<'b>(&'b self) -> Result<ExecutionEngine<'a, 'b>, String>
 	{
 		self.verify()?;
 		
@@ -180,8 +199,6 @@ impl<'a> Module<'a>
 	}
 }
 
-// TODO: LLVMRemoveModule
-
 pub struct ExecutionEngine<'a, 'b>
 where 'a: 'b
 {
@@ -195,19 +212,103 @@ where 'a: 'b
 	#[inline(always)]
 	fn drop(&mut self)
 	{
-		fn removeModule(executionEngineReference: LLVMExecutionEngineRef, moduleReference: LLVMModuleRef) -> Result<(), String>
-		{
-			let mut outReference = null_mut();
-			let mut errorMessage = null_mut();
-			let boolean = unsafe { executionEngineRemoveModule(executionEngineReference, moduleReference, &mut outReference, &mut errorMessage) };
-			handle_boolean_and_error_message!(boolean, errorMessage, executionEngineRemoveModule);
-			Ok(())
-		}
-		removeModule(self.reference, self.parent.reference);
+//		fn removeModule(executionEngineReference: LLVMExecutionEngineRef, moduleReference: LLVMModuleRef) -> Result<(), String>
+//		{
+//			let mut outReference = null_mut();
+//			let mut errorMessage = null_mut();
+//			let boolean = unsafe { executionEngineRemoveModule(executionEngineReference, moduleReference, &mut outReference, &mut errorMessage) };
+//			handle_boolean_and_error_message!(boolean, errorMessage, executionEngineRemoveModule);
+//			Ok(())
+//		}
+//		removeModule(self.reference, self.parent.reference);
 		
 		unsafe { LLVMDisposeExecutionEngine(self.reference) }
 	}
 }
+
+impl<'a, 'b> ExecutionEngine<'a, 'b>
+where 'a: 'b
+{
+	#[inline(always)]
+	fn globalValuePointer<T: Sized>(&self, staticName: &str) -> *mut T
+	{
+		let staticNameCString = CString::new(staticName).expect("Contains embedded ASCII NULs");
+		let address = unsafe { LLVMGetGlobalValueAddress(self.reference, staticNameCString.as_ptr()) };
+		if unlikely(address == 0)
+		{
+			null_mut()
+		}
+		else
+		{
+			unsafe { transmute(address) }
+		}
+	}
+	
+	#[inline(always)]
+	fn voidFunctionAddress(&self, functionName: &str) -> u64
+	{
+		let functionNameCString = CString::new(functionName).expect("Contains embedded ASCII NULs");
+		unsafe { LLVMGetFunctionAddress(self.reference, functionNameCString.as_ptr()) }
+	}
+	
+	#[inline(always)]
+	pub fn voidFunctionPointer(&self, functionName: &str) -> Option<extern "C" fn()>
+	{
+		let address = self.voidFunctionAddress(functionName);
+		if unlikely(address == 0)
+		{
+			None
+		}
+		else
+		{
+			let functionPointer: extern "C" fn() = unsafe { transmute(address) };
+			
+			Some(functionPointer)
+		}
+	}
+	
+	#[inline(always)]
+	pub fn executeVoidFunctionPointer(&self, functionName: &str) -> Option<()>
+	{
+		let address = self.voidFunctionAddress(functionName);
+		if unlikely(address == 0)
+		{
+			None
+		}
+		else
+		{
+			let functionPointer: extern "C" fn() = unsafe { transmute(address) };
+			
+			Some(functionPointer())
+		}
+	}
+	
+	// llvm_sys::execution_engine::LLVMRunFunction - takes a number of arguments; call LLVMFindFunction() first to get a function LLVMValueRef
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 pub struct Target
 {
