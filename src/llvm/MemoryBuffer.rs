@@ -51,4 +51,16 @@ impl<'a> MemoryBuffer<'a>
 			}
 		)
 	}
+	
+	#[inline(always)]
+	pub fn size(&self) -> usize
+	{
+		unsafe { LLVMGetBufferSize(self.reference) }
+	}
+	
+	#[inline(always)]
+	pub fn address(&self) -> *const c_char
+	{
+		unsafe { LLVMGetBufferStart(self.reference) }
+	}
 }

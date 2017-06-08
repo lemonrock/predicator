@@ -33,7 +33,7 @@ impl<'a> Clone for Module<'a>
 impl<'a> Module<'a>
 {
 	#[inline(always)]
-	pub fn optimiseAndWriteToMemory<'b>(&self) -> Result<MemoryBuffer<'b>, ModuleOptimisationFailure>
+	pub fn optimiseAndWriteBitCodeToMemory<'b>(&self) -> Result<MemoryBuffer<'b>, ModuleOptimisationFailure>
 	{
 		match self.createFunctionPassManager().map(|manager| manager.runPassesOnModule())
 		{
