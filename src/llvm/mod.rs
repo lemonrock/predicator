@@ -6,8 +6,10 @@ include!("handle_boolean_and_error_message.rs");
 include!("panic_on_false.rs");
 
 
-use self::machineCodeJit::ExecutionEngine;
+use self::machineCodeJit::*;
+use self::orcJit::*;
 use ::libc::c_char;
+use ::libc::c_void;
 use ::llvm_sys::analysis::*;
 use ::llvm_sys::bit_reader::*;
 use ::llvm_sys::core::*;
@@ -23,6 +25,7 @@ use ::llvm_sys::prelude::*;
 use ::llvm_sys::target::*;
 use ::llvm_sys::target_machine::*;
 use ::rust_extra::unlikely;
+use ::std::ffi::CStr;
 use ::std::ffi::CString;
 use ::std::mem::uninitialized;
 use ::std::mem::size_of;
@@ -37,6 +40,10 @@ pub mod orcJit;
 
 include!("Context.rs");
 include!("ContextDropWrapper.rs");
+include!("JitContext.rs");
 include!("MemoryBuffer.rs");
+include!("MemoryBufferCreator.rs");
 include!("Module.rs");
 include!("ModuleDropWrapper.rs");
+include!("ModuleSourceCodeType.rs");
+include!("SymbolResolver.rs");

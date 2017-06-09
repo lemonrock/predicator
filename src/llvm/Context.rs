@@ -9,83 +9,15 @@ pub struct Context
 	dropWrapper: Rc<ContextDropWrapper>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum MemoryBufferCreator<'a>
-{
-	Buffer(&'a [u8]),
-	
-	/// We could use Path, but it is such a pain to get a *const c_char null terminated string from...
-	File(&'a str),
-}
-
-impl<'a> MemoryBufferCreator<'a>
-{
-	// Potentially could be replaced by an implementation of the From trait
-	#[inline(always)]
-	pub fn createMemoryBuffer(&self) -> Result<MemoryBuffer<'a>, String>
-	{
-		use self::MemoryBufferCreator::*;
-		
-		match *self
-		{
-			Buffer(buffer) => Ok(MemoryBuffer::fromSlice(buffer)),
-			File(filePath) => MemoryBuffer::fromFile(filePath),
-		}
-	}
-}
-
-#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum ModuleSource
-{
-	IntermediateRepresentation,
-	BitCode,
-}
-
-impl ModuleSource
-{
-	#[inline(always)]
-	pub fn createVerifiedModule<'a>(&self, context: &Context, memoryBufferCreator: &MemoryBufferCreator<'a>) -> Result<Module, String>
-	{
-		use self::ModuleSource::*;
-		
-		let memoryBuffer = memoryBufferCreator.createMemoryBuffer()?;
-		
-		let module = match *self
-		{
-			IntermediateRepresentation => context.parseTextualIntermediateRepresentationIntoModule(&memoryBuffer),
-			BitCode => context.parseBitCodeIntoModule(&memoryBuffer),
-		}?;
-		
-		module.verify()
-	}
-}
-
 impl Context
 {
 	#[inline(always)]
-	pub fn initialiseOnceOnMainThread()
-	{
-		unsafe { LLVMLinkInMCJIT() };
-		
-		let boolean = unsafe { LLVM_InitializeNativeTarget() };
-		panic_on_false!(boolean, LLVM_InitializeNativeTarget);
-		
-		unsafe { LLVM_InitializeAllTargetMCs() };
-		
-		let boolean = unsafe { LLVM_InitializeNativeAsmPrinter() };
-		panic_on_false!(boolean, LLVM_InitializeNativeAsmPrinter);
-		
-		let boolean = unsafe { LLVM_InitializeNativeAsmParser() };
-		panic_on_false!(boolean, LLVM_InitializeNativeAsmParser);
-	}
-	
-	#[inline(always)]
-	pub fn new() -> Result<Self, ()>
+	pub fn new() -> Result<Self, String>
 	{
 		let reference = unsafe { LLVMContextCreate() };
 		if reference.is_null()
 		{
-			Err(())
+			Err("Could not create context".to_owned())
 		}
 		else
 		{
