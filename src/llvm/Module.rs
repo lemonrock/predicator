@@ -44,28 +44,6 @@ impl Module
 	}
 	
 	#[inline(always)]
-	pub fn createFunctionPassManager(&self) -> Result<FunctionPassManager, FunctionPassManagerError>
-	{
-		let reference = unsafe { LLVMCreateFunctionPassManagerForModule(self.reference) };
-		if reference.is_null()
-		{
-			Err(FunctionPassManagerError::CouldNotCreate)
-		}
-		else
-		{
-			Ok
-			(
-				FunctionPassManager
-				{
-					reference: reference,
-					parentReference: self.reference,
-					parentDropWrapper: self.dropWrapper.clone(),
-				}
-			)
-		}
-	}
-	
-	#[inline(always)]
 	pub fn executionEngineMachineCodeJit(&self) -> Result<ExecutionEngine, String>
 	{
 		let sizeOfOptions = size_of::<LLVMMCJITCompilerOptions>();
