@@ -2,17 +2,17 @@
 // Copyright © 2017 The developers of predicator. See the COPYRIGHT file in the top-level directory of this distribution and at https://raw.githubusercontent.com/lemonrock/predicator/master/COPYRIGHT.
 
 
-pub struct TargetMachine<'a>
+pub struct TargetMachine
 {
 	reference: LLVMTargetMachineRef,
-	parent: &'a Target,
 }
 
-impl<'a> Drop for TargetMachine<'a>
+impl Drop for TargetMachine
 {
 	#[inline(always)]
 	fn drop(&mut self)
 	{
+		// orcJitStackReference takes internal ownership of self.reference, so we don't dispose it if this is the case
 		if !self.reference.is_null()
 		{
 			unsafe { LLVMDisposeTargetMachine(self.reference) }
@@ -20,19 +20,30 @@ impl<'a> Drop for TargetMachine<'a>
 	}
 }
 
-impl<'a> TargetMachine<'a>
+impl TargetMachine
 {
 	#[inline(always)]
-	pub fn toOrcJitStack(mut self) -> OrcJitStack<'a>
+	pub fn toOrcJitStack(mut self) -> Result<OrcJitStack, String>
 	{
-		// orcJitStackReference takes internal ownership of self.reference
 		let orcJitStackReference = unsafe { LLVMOrcCreateInstance(self.reference) };
-		self.reference = null_mut();
 		
-		OrcJitStack
+		if orcJitStackReference.is_null()
 		{
-			reference: orcJitStackReference,
-			parent: self.parent,
+			Err("Could not create ORC JIT stack".to_owned())
+		}
+		else
+		{
+			// orcJitStackReference takes internal ownership of self.reference
+			self.reference = null_mut();
+			
+			Ok
+			(
+				OrcJitStack
+				{
+					reference: orcJitStackReference,
+					dropWrapper: Rc::new(OrcJitStackDropWrapper(orcJitStackReference)),
+				}
+			)
 		}
 	}
 }

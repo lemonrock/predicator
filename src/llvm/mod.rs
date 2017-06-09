@@ -10,7 +10,6 @@ use self::machineCodeJit::ExecutionEngine;
 use ::libc::c_char;
 use ::llvm_sys::analysis::*;
 use ::llvm_sys::bit_reader::*;
-use ::llvm_sys::bit_writer::*;
 use ::llvm_sys::core::*;
 use ::llvm_sys::execution_engine::LLVMCreateMCJITCompilerForModule;
 use ::llvm_sys::execution_engine::LLVMInitializeMCJITCompilerOptions;
@@ -32,17 +31,20 @@ use ::std::mem::uninitialized;
 use ::std::mem::size_of;
 use ::std::mem::zeroed;
 use ::std::ptr::null_mut;
+use ::std::rc::Rc;
 
 
 pub mod machineCodeJit;
 pub mod orcJit;
 
 
+include!("Context.rs");
+include!("ContextDropWrapper.rs");
 include!("FunctionPassManager.rs");
 include!("FunctionPassManagerError.rs");
 include!("InterProceduralOptimisationPassManager.rs");
 include!("InterProceduralOptimisationPassManagerError.rs");
 include!("MemoryBuffer.rs");
 include!("Module.rs");
+include!("ModuleDropWrapper.rs");
 include!("ModuleOptimisationFailure.rs");
-include!("PerThreadContext.rs");

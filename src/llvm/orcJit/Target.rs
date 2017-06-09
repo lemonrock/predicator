@@ -2,29 +2,46 @@
 // Copyright © 2017 The developers of predicator. See the COPYRIGHT file in the top-level directory of this distribution and at https://raw.githubusercontent.com/lemonrock/predicator/master/COPYRIGHT.
 
 
+#[derive(Clone)]
 pub struct Target
 {
 	reference: LLVMTargetRef,
-	triple: *const c_char,
+	triple: CString,
 }
 
 impl Target
 {
-	#[inline(always)]
-	fn defaultTargetTriple() -> *const c_char
+	// llvmlite exposes these, but not llvm-sys: https://github.com/numba/llvmlite/blob/646fb3f396fa3c5bd853025466ac6d78e7e4ed94/ffi/targets.cpp
+	// getHostCPUFeatures
+	pub fn createHostOrcJitStack<'a>(cpu: *const c_char, features: *const c_char) -> Result<OrcJitStack, String>
 	{
-		unsafe { LLVMGetDefaultTargetTriple() }
+		let hostTarget = Target::obtainTargetForHost()?;
+		let hostTargetMachine = hostTarget.createTargetMachine(cpu, features, LLVMCodeGenOptLevel::LLVMCodeGenLevelAggressive, LLVMRelocMode::LLVMRelocStatic, LLVMCodeModel::LLVMCodeModelJITDefault)?;
+		let orcJitStack = hostTargetMachine.toOrcJitStack()?;
+		Ok(orcJitStack)
 	}
 	
 	#[inline(always)]
-	pub fn createForDefault() -> Result<Self, String>
+	fn defaultTargetTriple() -> CString
+	{
+		let result = unsafe { LLVMGetDefaultTargetTriple() };
+		
+		let value = (unsafe { CStr::from_ptr(result) }).to_owned();
+		
+		unsafe { LLVMDisposeMessage(result) };
+		
+		value
+	}
+	
+	#[inline(always)]
+	pub fn obtainTargetForHost() -> Result<Self, String>
 	{
 		let targetTriple = Self::defaultTargetTriple();
 		
 		let mut targetReference = unsafe { uninitialized() };
 		
 		let mut errorMessage = null_mut();
-		let boolean = unsafe { LLVMGetTargetFromTriple(targetTriple, &mut targetReference, &mut errorMessage) };
+		let boolean = unsafe { LLVMGetTargetFromTriple(targetTriple.as_ptr(), &mut targetReference, &mut errorMessage) };
 		handle_boolean_and_error_message!(boolean, errorMessage, LLVMGetTargetFromTriple);
 		
 		Ok
@@ -68,13 +85,22 @@ impl Target
 	}
 	
 	#[inline(always)]
-	pub fn createTargetMachine<'a>(&'a self, cpu: *const c_char, features: *const c_char, level: LLVMCodeGenOptLevel, relocationMode: LLVMRelocMode, codeModel: LLVMCodeModel) -> TargetMachine<'a>
+	pub fn createTargetMachine(&self, cpu: *const c_char, features: *const c_char, level: LLVMCodeGenOptLevel, relocationMode: LLVMRelocMode, codeModel: LLVMCodeModel) -> Result<TargetMachine, String>
 	{
-		// LLVMDisposeTargetMachine
-		TargetMachine
+		let reference = unsafe { LLVMCreateTargetMachine(self.reference, self.triple.as_ptr(), cpu, features, level, relocationMode, codeModel) };
+		if reference.is_null()
 		{
-			reference: unsafe { LLVMCreateTargetMachine(self.reference, self.triple, cpu, features, level, relocationMode, codeModel) },
-			parent: self,
+			Err("Could not create target machine".to_owned())
+		}
+		else
+		{
+			Ok
+			(
+				TargetMachine
+				{
+					reference: reference,
+				}
+			)
 		}
 	}
 }

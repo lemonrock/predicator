@@ -2,15 +2,13 @@
 // Copyright © 2017 The developers of predicator. See the COPYRIGHT file in the top-level directory of this distribution and at https://raw.githubusercontent.com/lemonrock/predicator/master/COPYRIGHT.
 
 
-pub struct ExecutionEngine<'a, 'b>
-	where 'a: 'b
+pub struct ExecutionEngine
 {
 	pub(crate) reference: LLVMExecutionEngineRef,
-	#[allow(dead_code)] pub(crate) parent: &'b Module<'a>,
+	#[allow(dead_code)] pub(crate) parentDropWrapper: Rc<ModuleDropWrapper>,
 }
 
-impl<'a, 'b> Drop for ExecutionEngine<'a, 'b>
-	where 'a: 'b
+impl Drop for ExecutionEngine
 {
 	#[inline(always)]
 	fn drop(&mut self)
@@ -30,8 +28,7 @@ impl<'a, 'b> Drop for ExecutionEngine<'a, 'b>
 	}
 }
 
-impl<'a, 'b> ExecutionEngine<'a, 'b>
-	where 'a: 'b
+impl ExecutionEngine
 {
 	#[inline(always)]
 	pub fn globalValuePointer<T: Sized>(&self, staticName: &str) -> *mut T

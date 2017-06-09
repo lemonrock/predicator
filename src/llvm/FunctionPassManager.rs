@@ -2,15 +2,14 @@
 // Copyright © 2017 The developers of predicator. See the COPYRIGHT file in the top-level directory of this distribution and at https://raw.githubusercontent.com/lemonrock/predicator/master/COPYRIGHT.
 
 
-pub struct FunctionPassManager<'a, 'b>
-	where 'a: 'b
+pub struct FunctionPassManager
 {
 	reference: LLVMPassManagerRef,
-	parent: &'b Module<'a>,
+	parentReference: LLVMModuleRef,
+	#[allow(dead_code)] parentDropWrapper: Rc<ModuleDropWrapper>,
 }
 
-impl<'a, 'b> Drop for FunctionPassManager<'a, 'b>
-	where 'a: 'b
+impl Drop for FunctionPassManager
 {
 	#[inline(always)]
 	fn drop(&mut self)
@@ -19,8 +18,7 @@ impl<'a, 'b> Drop for FunctionPassManager<'a, 'b>
 	}
 }
 
-impl<'a, 'b> FunctionPassManager<'a, 'b>
-	where 'a: 'b
+impl FunctionPassManager
 {
 	pub fn runPassesOnModule(self) -> Result<(), FunctionPassManagerError>
 	{
@@ -28,7 +26,7 @@ impl<'a, 'b> FunctionPassManager<'a, 'b>
 		
 		self.initialize()?;
 		
-		let mut functionReference = unsafe { LLVMGetFirstFunction(self.parent.reference) };
+		let mut functionReference = unsafe { LLVMGetFirstFunction(self.parentReference) };
 		
 		while !functionReference.is_null()
 		{

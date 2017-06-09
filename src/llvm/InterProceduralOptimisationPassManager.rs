@@ -39,11 +39,11 @@ impl InterProceduralOptimisationPassManager
 	}
 	
 	#[inline(always)]
-	pub fn runPassesOnModule(self, module: &Module) -> Result<(), InterProceduralOptimisationPassManagerError>
+	pub fn runPassesOnModule(self, module: Module) -> Result<Module, InterProceduralOptimisationPassManagerError>
 	{
 		self.addInterProceduralOptimisationPasses();
 		
-		module.verify().map_err(|error| InterProceduralOptimisationPassManagerError::ModuleInvalidBeforeRunningPasses(error))?;
+		let module = module.verify().map_err(|error| InterProceduralOptimisationPassManagerError::ModuleInvalidBeforeRunningPasses(error))?;
 		
 		if unlikely(unsafe { LLVMRunPassManager(self.reference, module.reference) } != 0)
 		{

@@ -2,20 +2,13 @@
 // Copyright © 2017 The developers of predicator. See the COPYRIGHT file in the top-level directory of this distribution and at https://raw.githubusercontent.com/lemonrock/predicator/master/COPYRIGHT.
 
 
-use super::*;
-use ::libc::c_char;
-use ::libc::c_void;
-use ::rust_extra::unlikely;
-use ::std::ffi::CStr;
-use ::std::mem::transmute;
-use ::std::mem::uninitialized;
-use ::std::ptr::null_mut;
-use ::std::rc::Rc;
+struct ContextDropWrapper(LLVMContextRef);
 
-
-include!("ModuleInOrcJitStack.rs");
-include!("ObjectFile.rs");
-include!("OrcJitStack.rs");
-include!("OrcJitStackDropWrapper.rs");
-include!("Target.rs");
-include!("TargetMachine.rs");
+impl Drop for ContextDropWrapper
+{
+	#[inline(always)]
+	fn drop(&mut self)
+	{
+		unsafe { LLVMContextDispose(self.0) }
+	}
+}

@@ -2,82 +2,49 @@
 // Copyright © 2017 The developers of predicator. See the COPYRIGHT file in the top-level directory of this distribution and at https://raw.githubusercontent.com/lemonrock/predicator/master/COPYRIGHT.
 
 
-pub struct Module<'a>
+#[derive(Clone)]
+pub struct Module
 {
 	reference: LLVMModuleRef,
-	parent: &'a PerThreadContext,
+	dropWrapper: Rc<ModuleDropWrapper>,
+	parentDropWrapper: Rc<ContextDropWrapper>,
 }
 
-impl<'a> Drop for Module<'a>
+impl Module
 {
 	#[inline(always)]
-	fn drop(&mut self)
+	pub fn useAsTemplateForNewModule(&self) -> Result<Self, String>
 	{
-		unsafe { LLVMDisposeModule(self.reference) }
-	}
-}
-
-impl<'a> Clone for Module<'a>
-{
-	#[inline(always)]
-	fn clone(&self) -> Self
-	{
-		Module
+		let reference = unsafe { LLVMCloneModule(self.reference) };
+		if unlikely(reference.is_null())
 		{
-			reference: unsafe { LLVMCloneModule(self.reference) },
-			parent: self.parent,
+			Err("Could not clone".to_owned())
 		}
-	}
-}
-
-impl<'a> Module<'a>
-{
-	#[inline(always)]
-	pub fn optimiseAndWriteBitCodeToMemory<'b>(&self) -> Result<MemoryBuffer<'b>, ModuleOptimisationFailure>
-	{
-		match self.createFunctionPassManager().map(|manager| manager.runPassesOnModule())
+		else
 		{
-			Err(error) => Err(ModuleOptimisationFailure::FunctionPass(error)),
-			Ok(_) =>
-			{
-				match InterProceduralOptimisationPassManager::create().map(|manager| manager.runPassesOnModule(self))
+			Ok
+			(
+				Self
 				{
-					Err(error) => Err(ModuleOptimisationFailure::InterProceduralOptimisationPass(error)),
-					Ok(_) =>
-					{
-						let memoryBufferReference = unsafe { LLVMWriteBitcodeToMemoryBuffer(self.reference) };
-						if unlikely(memoryBufferReference.is_null())
-						{
-							Err(ModuleOptimisationFailure::WriteToMemory)
-						}
-						else
-						{
-							Ok
-							(
-								MemoryBuffer
-								{
-									reference: memoryBufferReference,
-									slice: None,
-								}
-							)
-						}
-					}
+					reference: reference,
+					dropWrapper: Rc::new(ModuleDropWrapper(reference)),
+					parentDropWrapper: self.parentDropWrapper.clone(),
 				}
-			}
+			)
 		}
 	}
 	
 	#[inline(always)]
-	fn verify(&self) -> Result<(), String>
+	pub fn verify(self) -> Result<Self, String>
 	{
 		let mut errorMessage = null_mut();
 		let boolean = unsafe { LLVMVerifyModule(self.reference, LLVMVerifierFailureAction::LLVMReturnStatusAction, &mut errorMessage) };
 		handle_boolean_and_error_message!(boolean, errorMessage, LLVMVerifyModule);
-		Ok(())
+		Ok(self)
 	}
 	
 	#[inline(always)]
-	pub fn createFunctionPassManager<'b>(&'b self) -> Result<FunctionPassManager<'a, 'b>, FunctionPassManagerError>
+	pub fn createFunctionPassManager(&self) -> Result<FunctionPassManager, FunctionPassManagerError>
 	{
 		let reference = unsafe { LLVMCreateFunctionPassManagerForModule(self.reference) };
 		if reference.is_null()
@@ -91,17 +58,16 @@ impl<'a> Module<'a>
 				FunctionPassManager
 				{
 					reference: reference,
-					parent: self,
+					parentReference: self.reference,
+					parentDropWrapper: self.dropWrapper.clone(),
 				}
 			)
 		}
 	}
 	
 	#[inline(always)]
-	pub fn executionEngineMachineCodeJit<'b>(&'b self) -> Result<ExecutionEngine<'a, 'b>, String>
+	pub fn executionEngineMachineCodeJit(&self) -> Result<ExecutionEngine, String>
 	{
-		self.verify()?;
-		
 		let sizeOfOptions = size_of::<LLVMMCJITCompilerOptions>();
 		
 		let mut options = unsafe { zeroed() };
@@ -123,7 +89,7 @@ impl<'a> Module<'a>
 			ExecutionEngine
 			{
 				reference: executionEngine,
-				parent: self
+				parentDropWrapper: self.dropWrapper.clone(),
 			}
 		)
 	}
