@@ -48,7 +48,11 @@ fn compile_sample_plugin() -> String
 	let plugin_source_file_path = path.into_os_string().into_string().unwrap();
 	
 	let crate_name = "sample_plugin";
-	let random_extra = "10b7f3d0ab6b0d9f";
+	//let random_extra = "10b7f3d0ab6b0d9f";
+	
+	let mut plugin_bit_code_file_path = PathBuf::from(env!("OUT_DIR"));
+	plugin_bit_code_file_path.push(format!("{}.bc", crate_name));
+	let plugin_bit_code_file_path = plugin_bit_code_file_path.into_os_string().into_string().unwrap();
 	
 	Command::new("rustc")
 		.arg("--crate-name").arg(crate_name)
@@ -59,12 +63,11 @@ fn compile_sample_plugin() -> String
 		.arg("-C").arg("panic=abort")
 		.arg("-C").arg("lto")
 		.arg("-C").arg("relocation-model=static")
-		.arg("-C").arg(format!("metadata={}", random_extra))
-		.arg("-C").arg(format!("extra-filename=-{}", random_extra))
-		.arg("--out-dir").arg(env!("OUT_DIR"))
+		//.arg("-C").arg(format!("metadata={}", random_extra))
+		//.arg("-C").arg(format!("extra-filename=-{}", random_extra))
+		//.arg("--out-dir").arg(env!("OUT_DIR"))
+		.arg("-o").arg(&plugin_bit_code_file_path)
 		.status().expect("Failed");
 	
-	let mut plugin_bit_code_file_path = PathBuf::from(env!("OUT_DIR"));
-	plugin_bit_code_file_path.push(format!("{}-{}.bc", crate_name, random_extra));
-	plugin_bit_code_file_path.into_os_string().into_string().unwrap()
+	plugin_bit_code_file_path
 }

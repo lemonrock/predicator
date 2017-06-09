@@ -7,7 +7,7 @@ name = "predicator"
 description = "predicator allows the creation, loading, and unloading of Rust and other language plugins on the fly using LLVM's ORC JIT"
 keywords = ["llvm", "jit", "orc", "plugin"]
 categories = ["no-std"]
-license = "MIT"
+license = "AGPL-3.0"
 authors = ["Raphael Cohn <raphael.cohn@stormmq.com>"]
 documentation = "https://github.com/lemonrock/predicator/blob/master/README.md"
 homepage = "https://github.com/lemonrock/predicator"
@@ -17,7 +17,7 @@ include = ["README.md", "LICENSE", "COPYRIGHT", "src/**/*.rs", "benches/**/*.rs"
 readme = "README.md"
 build = "src/build.rs"
 publish = true
-version = "0.0.1"
+version = "0.0.2"
 
 [profile.release]
 opt-level = 3
@@ -32,6 +32,7 @@ cpp = "0.3"
 libc = "0.2"
 llvm-sys = "40.0.*"
 rust-extra = "0.0.13"
+tempfile = "2.1.*"
 
 [build-dependencies]
 cpp_build = "0.3"

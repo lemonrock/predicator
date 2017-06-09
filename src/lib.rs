@@ -10,6 +10,7 @@
 extern crate libc;
 extern crate llvm_sys;
 extern crate rust_extra;
+extern crate tempfile;
 
 
 use ::libc::c_char;
@@ -19,6 +20,7 @@ use ::std::ffi::CStr;
 use ::std::ffi::CString;
 
 
+pub mod compiler;
 pub mod llvm;
 
 
