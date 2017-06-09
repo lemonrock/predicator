@@ -9,6 +9,57 @@ pub struct Context
 	dropWrapper: Rc<ContextDropWrapper>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum MemoryBufferCreator<'a>
+{
+	Buffer(&'a [u8]),
+	
+	/// We could use Path, but it is such a pain to get a *const c_char null terminated string from...
+	File(&'a str),
+}
+
+impl<'a> MemoryBufferCreator<'a>
+{
+	// Potentially could be replaced by an implementation of the From trait
+	#[inline(always)]
+	pub fn createMemoryBuffer(&self) -> Result<MemoryBuffer<'a>, String>
+	{
+		use self::MemoryBufferCreator::*;
+		
+		match *self
+		{
+			Buffer(buffer) => Ok(MemoryBuffer::fromSlice(buffer)),
+			File(filePath) => MemoryBuffer::fromFile(filePath),
+		}
+	}
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum ModuleSource
+{
+	IntermediateRepresentation,
+	BitCode,
+}
+
+impl ModuleSource
+{
+	#[inline(always)]
+	pub fn createVerifiedModule<'a>(&self, context: &Context, memoryBufferCreator: &MemoryBufferCreator<'a>) -> Result<Module, String>
+	{
+		use self::ModuleSource::*;
+		
+		let memoryBuffer = memoryBufferCreator.createMemoryBuffer()?;
+		
+		let module = match *self
+		{
+			IntermediateRepresentation => context.parseTextualIntermediateRepresentationIntoModule(&memoryBuffer),
+			BitCode => context.parseBitCodeIntoModule(&memoryBuffer),
+		}?;
+		
+		module.verify()
+	}
+}
+
 impl Context
 {
 	#[inline(always)]
@@ -49,44 +100,8 @@ impl Context
 		}
 	}
 	
-	/// TODO: Implement From for MemoryBuffer
 	#[inline(always)]
-	pub fn createModuleFromIntermediateRepresentationBuffer<'a>(self, buffer: &'a [u8]) -> Result<Module, String>
-	{
-		let memoryBuffer = MemoryBuffer::fromSlice(buffer);
-		let module = self.parseTextualIntermediateRepresentationIntoModule(&memoryBuffer)?;
-		module.verify()
-	}
-	
-	/// TODO: Implement From for MemoryBuffer
-	#[inline(always)]
-	pub fn createModuleFromIntermediateRepresentationFile(self, path: &str) -> Result<Module, String>
-	{
-		let memoryBuffer = MemoryBuffer::fromFile(path)?;
-		let module = self.parseTextualIntermediateRepresentationIntoModule(&memoryBuffer)?;
-		module.verify()
-	}
-	
-	/// TODO: Implement From for MemoryBuffer
-	#[inline(always)]
-	pub fn createModuleFromBitCodeBuffer<'a>(self, buffer: &'a [u8]) -> Result<Module, String>
-	{
-		let memoryBuffer = MemoryBuffer::fromSlice(buffer);
-		let module = self.parseBitCodeIntoModule(&memoryBuffer)?;
-		module.verify()
-	}
-	
-	/// TODO: Implement From for MemoryBuffer
-	#[inline(always)]
-	pub fn createModuleFromBitCodeFile(self, path: &str) -> Result<Module, String>
-	{
-		let memoryBuffer = MemoryBuffer::fromFile(path)?;
-		let module = self.parseBitCodeIntoModule(&memoryBuffer)?;
-		module.verify()
-	}
-	
-	#[inline(always)]
-	pub fn createModule(self, name: String) -> Result<Module, String>
+	pub fn createModule(&self, name: String) -> Result<Module, String>
 	{
 		let cName = CString::new(name).expect("name contains embedded NULs");
 		let reference = unsafe { LLVMModuleCreateWithNameInContext(cName.as_ptr(), self.reference) };
@@ -102,14 +117,14 @@ impl Context
 				{
 					reference: reference,
 					dropWrapper: Rc::new(ModuleDropWrapper(reference)),
-					parentDropWrapper: self.dropWrapper,
+					parentDropWrapper: self.dropWrapper.clone(),
 				}
 			)
 		}
 	}
 	
 	#[inline(always)]
-	pub fn loadBitCodeIntoModule<'a>(self, memoryBuffer: &MemoryBuffer<'a>) -> Result<Module, String>
+	pub fn loadBitCodeIntoModule<'a>(&self, memoryBuffer: &MemoryBuffer<'a>) -> Result<Module, String>
 	{
 		let mut reference = unsafe { uninitialized() };
 		
@@ -126,14 +141,14 @@ impl Context
 				{
 					reference: reference,
 					dropWrapper: Rc::new(ModuleDropWrapper(reference)),
-					parentDropWrapper: self.dropWrapper,
+					parentDropWrapper: self.dropWrapper.clone(),
 				}
 			)
 		}
 	}
 	
 	#[inline(always)]
-	pub fn parseBitCodeIntoModule<'a>(self, memoryBuffer: &MemoryBuffer<'a>) -> Result<Module, String>
+	pub fn parseBitCodeIntoModule<'a>(&self, memoryBuffer: &MemoryBuffer<'a>) -> Result<Module, String>
 	{
 		let mut reference = unsafe { uninitialized() };
 		
@@ -150,14 +165,14 @@ impl Context
 				{
 					reference: reference,
 					dropWrapper: Rc::new(ModuleDropWrapper(reference)),
-					parentDropWrapper: self.dropWrapper,
+					parentDropWrapper: self.dropWrapper.clone(),
 				}
 			)
 		}
 	}
 	
 	#[inline(always)]
-	pub fn parseTextualIntermediateRepresentationIntoModule<'a>(self, memoryBuffer: &MemoryBuffer<'a>) -> Result<Module, String>
+	pub fn parseTextualIntermediateRepresentationIntoModule<'a>(&self, memoryBuffer: &MemoryBuffer<'a>) -> Result<Module, String>
 	{
 		let mut reference = unsafe { uninitialized() };
 		
@@ -171,7 +186,7 @@ impl Context
 			{
 				reference: reference,
 				dropWrapper: Rc::new(ModuleDropWrapper(reference)),
-				parentDropWrapper: self.dropWrapper,
+				parentDropWrapper: self.dropWrapper.clone(),
 			}
 		)
 	}
