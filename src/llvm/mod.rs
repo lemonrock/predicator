@@ -40,6 +40,7 @@ pub mod orcJit;
 
 include!("Context.rs");
 include!("ContextDropWrapper.rs");
+include!("initialiseOnceOnMainThread.rs");
 include!("JitContext.rs");
 include!("MemoryBuffer.rs");
 include!("MemoryBufferCreator.rs");

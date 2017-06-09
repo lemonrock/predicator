@@ -11,23 +11,6 @@ pub struct JitContext<SR: SymbolResolver>
 
 impl<SR: SymbolResolver> JitContext<SR>
 {
-	#[inline(always)]
-	pub fn initialiseOnceOnMainThread()
-	{
-		unsafe { LLVMLinkInMCJIT() };
-		
-		let boolean = unsafe { LLVM_InitializeNativeTarget() };
-		panic_on_false!(boolean, LLVM_InitializeNativeTarget);
-		
-		unsafe { LLVM_InitializeAllTargetMCs() };
-		
-		let boolean = unsafe { LLVM_InitializeNativeAsmPrinter() };
-		panic_on_false!(boolean, LLVM_InitializeNativeAsmPrinter);
-		
-		let boolean = unsafe { LLVM_InitializeNativeAsmParser() };
-		panic_on_false!(boolean, LLVM_InitializeNativeAsmParser);
-	}
-	
 	pub fn new(symbolResolver: SR) -> Result<Self, String>
 	{
 		let context = Context::new()?;
@@ -57,7 +40,7 @@ impl<SR: SymbolResolver> JitContext<SR>
 	}
 }
 
-pub struct NaiveSymbolResolver(u64);
+pub struct NaiveSymbolResolver(pub u64);
 
 impl SymbolResolver for NaiveSymbolResolver
 {
