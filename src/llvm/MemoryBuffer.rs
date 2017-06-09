@@ -40,7 +40,7 @@ impl<'a> MemoryBuffer<'a>
 		let mut reference = unsafe { uninitialized() };
 		let mut errorMessage = null_mut();
 		let boolean = unsafe { LLVMCreateMemoryBufferWithContentsOfFile(filePath.as_ptr(), &mut reference, &mut errorMessage) };
-		handle_boolean_and_error_message!(boolean, errorMessage, LLVMParseIRInContext);
+		handle_boolean_and_error_message!(boolean, errorMessage, LLVMCreateMemoryBufferWithContentsOfFile);
 		
 		Ok
 		(

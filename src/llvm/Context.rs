@@ -59,7 +59,6 @@ impl Context
 	pub fn loadBitCodeIntoModule<'a>(&self, memoryBuffer: &MemoryBuffer<'a>) -> Result<Module, String>
 	{
 		let mut reference = unsafe { uninitialized() };
-		
 		let boolean = unsafe { LLVMGetBitcodeModuleInContext2(self.reference, memoryBuffer.reference, &mut reference) };
 		if unlikely(boolean != 0)
 		{
@@ -83,7 +82,6 @@ impl Context
 	pub fn parseBitCodeIntoModule<'a>(&self, memoryBuffer: &MemoryBuffer<'a>) -> Result<Module, String>
 	{
 		let mut reference = unsafe { uninitialized() };
-		
 		let boolean = unsafe { LLVMParseBitcodeInContext2(self.reference, memoryBuffer.reference, &mut reference) };
 		if unlikely(boolean != 0)
 		{
