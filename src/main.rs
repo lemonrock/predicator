@@ -33,6 +33,10 @@ fn main()
 }
 
 
+// Next step: a command line tool, possibly integrated with cargo, that 'predicates'
+// and, optionally, loads the plugin
+
+
 use ::std::path::PathBuf;
 use ::std::process::Command;
 
