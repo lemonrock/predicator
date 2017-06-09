@@ -4,8 +4,9 @@
 
 [package]
 name = "predicator"
-description = "predicator"
-keywords = ["predicator"]
+description = "predicator allows the creation, loading, and unloading of Rust and other language plugins on the fly using LLVM's ORC JIT"
+keywords = ["llvm", "jit", "orc", "plugin"]
+categories = ["no-std"]
 license = "MIT"
 authors = ["Raphael Cohn <raphael.cohn@stormmq.com>"]
 documentation = "https://github.com/lemonrock/predicator/blob/master/README.md"
@@ -15,8 +16,8 @@ exclude = ["*"]
 include = ["README.md", "LICENSE", "COPYRIGHT", "src/**/*.rs", "benches/**/*.rs", "examples/**/*.rs", "tests/**/*.rs", "Cargo.toml", "rustfmt.toml", "clippy.toml", "lib/**/*", "src/**/*.h", "tools/**/*", "bindgen-wrapper.conf.d/**/*", "compile-*.conf.d/**/*"]
 readme = "README.md"
 build = "src/build.rs"
-publish = false
-version = "0.0.0"
+publish = true
+version = "0.0.1"
 
 [profile.release]
 opt-level = 3

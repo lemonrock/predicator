@@ -1,9 +1,21 @@
 # predicator
 
-[predicator] is a rust crate that lets you write plug ins that are can be loaded and unloaded and optimized at runtime, in Rust and any other language that LLVM JIT supports.
+[predicator] is a rust crate that lets you write plug ins that are can be loaded and unloaded and optimized at runtime, in Rust and any other language that LLVM JIT supports. It's ideal for filters, security checks and short-lived snippets of code that live for 10s to 100s of seconds in long-lived processes.
+
+It is thread safe, but plugins are limited to `#[no_std]` crates at this time. A longer term plan is to add support for hosting cargo, and experimenting with symbol resolvers.
+
+Statically-linked programs will work, but if they use a third-party library (even the libc), then they'll need to be specially compiled to pull in those definitions.
+
+
+## Impatient to get getting?
+
+Look at `src/main.rs`. This is all you need to create and load a plug in. Creation can be in a separate process, or even on a separate machine.
+
+Demonstrate it works on your machine with `cargo run`. You'll need Rust nightly. Tested on Mac OS X as of 9th June 2017.
 
 
 ## Writing a Plug In
+
 
 ### Setting up `Cargo.toml`
 

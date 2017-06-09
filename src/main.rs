@@ -64,5 +64,3 @@ fn compile_sample_plugin() -> String
 	plugin_bit_code_file_path.push(format!("{}-{}.bc", crate_name, random_extra));
 	plugin_bit_code_file_path.into_os_string().into_string().unwrap()
 }
-
-// rustc --crate-name experiment_with_ffi src/lib.rs --crate-type bin --emit=llvm-bc -C opt-level=3 -C panic=abort -C lto -C relocation-model=static -C metadata=10b7f3d0ab6b0d9f -C extra-filename=-10b7f3d0ab6b0d9f --out-dir MY/out/dir --target x86_64-unknown-linux-musl -C ar=x86_64-linux-musl-ar -C linker=x86_64-linux-musl-cc
