@@ -26,10 +26,10 @@ fn main()
 	// Execute the function
 	let result = unsafe { sample_plugin_function_pointer() };
 	
-	eprintln!("{:?}", unsafe { ::std::ffi::CStr::from_ptr(result) });
+	// Prove the plugin was run
+	assert!(::std::ffi::CString::new("Hello, world from sample_plugin!").unwrap() == unsafe { ::std::ffi::CStr::from_ptr(result) }.to_owned());
 	
 	// Note that once `plugins` is dropped the function pointer is no longer valid
-	
 }
 
 
