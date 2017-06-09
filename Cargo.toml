@@ -17,7 +17,7 @@ include = ["README.md", "LICENSE", "COPYRIGHT", "src/**/*.rs", "benches/**/*.rs"
 readme = "README.md"
 build = "src/build.rs"
 publish = true
-version = "0.0.2"
+version = "0.0.3"
 
 [profile.release]
 opt-level = 3

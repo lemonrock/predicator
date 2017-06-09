@@ -263,6 +263,6 @@ With thanks to the tutorial at <https://github.com/jauhien/iron-kaleidoscope#cha
 
 ## Licensing
 
-The license for this project is MIT.
+The license for this project is AFGPL-3.0.
 
 [predicator]: https://github.com/lemonrock/predicator "predicator GitHub page"
