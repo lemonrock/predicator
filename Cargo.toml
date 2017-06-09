@@ -32,7 +32,7 @@ cpp = "0.3"
 libc = "0.2"
 llvm-sys = "40.0.*"
 rust-extra = "0.0.13"
-tempfile = "2.1.*"
+rand = "0.3"
 
 [build-dependencies]
 cpp_build = "0.3"

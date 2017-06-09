@@ -29,9 +29,9 @@ impl<SR: SymbolResolver> JitContext<SR>
 	
 	pub fn loadPlugins(&self, moduleSourceCodeType: ModuleSourceCodeType, memoryBufferCreator: &MemoryBufferCreator) -> Result<ModuleInOrcJitStack, String>
 	{
-		let moduleContainingPlugIn = moduleSourceCodeType.createVerifiedModule(&self.context, memoryBufferCreator)?;
+		let moduleContainingPlugin = moduleSourceCodeType.createVerifiedModule(&self.context, memoryBufferCreator)?;
 		
-		Ok(self.orcJitStack.eagerlyAddModule(&moduleContainingPlugIn, Self::resolveSymbol, &self.symbolResolver as *const _ as *mut _))
+		Ok(self.orcJitStack.eagerlyAddModule(&moduleContainingPlugin, Self::resolveSymbol, &self.symbolResolver as *const _ as *mut _))
 	}
 	
 	extern "C" fn resolveSymbol(symbolName: *const c_char, lookupContext: *mut c_void) -> u64

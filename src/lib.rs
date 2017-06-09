@@ -9,8 +9,8 @@
 #[macro_use] extern crate cpp;
 extern crate libc;
 extern crate llvm_sys;
+extern crate rand;
 extern crate rust_extra;
-extern crate tempfile;
 
 
 use ::libc::c_char;
