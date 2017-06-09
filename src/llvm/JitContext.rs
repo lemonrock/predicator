@@ -28,10 +28,10 @@ impl<SR: SymbolResolver> JitContext<SR>
 		panic_on_false!(boolean, LLVM_InitializeNativeAsmParser);
 	}
 	
-	pub fn new(symbolResolver: SR, cpu: *const c_char, features: *const c_char) -> Result<Self, String>
+	pub fn new(symbolResolver: SR) -> Result<Self, String>
 	{
 		let context = Context::new()?;
-		let orcJitStack = Target::createHostOrcJitStack(cpu, features)?;
+		let orcJitStack = Target::createHostOrcJitStack()?;
 		
 		Ok
 		(

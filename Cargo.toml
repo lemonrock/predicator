@@ -13,8 +13,8 @@ homepage = "https://github.com/lemonrock/predicator"
 repository = "https://github.com/lemonrock/predicator.git"
 exclude = ["*"]
 include = ["README.md", "LICENSE", "COPYRIGHT", "src/**/*.rs", "benches/**/*.rs", "examples/**/*.rs", "tests/**/*.rs", "Cargo.toml", "rustfmt.toml", "clippy.toml", "lib/**/*", "src/**/*.h", "tools/**/*", "bindgen-wrapper.conf.d/**/*", "compile-*.conf.d/**/*"]
-# Relative to Cargo.toml
 readme = "README.md"
+build = "src/build.rs"
 publish = false
 version = "0.0.0"
 
@@ -27,7 +27,10 @@ debug-assertions = false
 codegen-units = 1
 
 [dependencies]
+cpp = "0.3"
 libc = "0.2"
 llvm-sys = "40.0.*"
-quick-error = "1.1"
 rust-extra = "0.0.13"
+
+[build-dependencies]
+cpp_build = "0.3"

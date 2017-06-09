@@ -11,12 +11,13 @@ pub struct Target
 
 impl Target
 {
-	// llvmlite exposes these, but not llvm-sys: https://github.com/numba/llvmlite/blob/646fb3f396fa3c5bd853025466ac6d78e7e4ed94/ffi/targets.cpp
-	// getHostCPUFeatures
-	pub fn createHostOrcJitStack<'a>(cpu: *const c_char, features: *const c_char) -> Result<OrcJitStack, String>
+	pub fn createHostOrcJitStack() -> Result<OrcJitStack, String>
 	{
 		let hostTarget = Target::obtainTargetForHost()?;
-		let hostTargetMachine = hostTarget.createTargetMachine(cpu, features, LLVMCodeGenOptLevel::LLVMCodeGenLevelAggressive, LLVMRelocMode::LLVMRelocStatic, LLVMCodeModel::LLVMCodeModelJITDefault)?;
+		let hostCpuName = ::llvmHostCpuName()?;
+		let hostCpuFeatures = ::llvmHostCpuFeatures()?;
+		
+		let hostTargetMachine = hostTarget.createTargetMachine(hostCpuName.as_ptr(), hostCpuFeatures.as_ptr(), LLVMCodeGenOptLevel::LLVMCodeGenLevelAggressive, LLVMRelocMode::LLVMRelocStatic, LLVMCodeModel::LLVMCodeModelJITDefault)?;
 		let orcJitStack = hostTargetMachine.toOrcJitStack()?;
 		Ok(orcJitStack)
 	}
