@@ -23,8 +23,13 @@ impl Builder
 		unsafe { LLVMPositionBuilderAtEnd(self.reference, basicBlockReference) }
 	}
 	
-	fn returnVoid(&self)
+	fn returnVoid(&self) -> Instruction
 	{
-		unsafe { LLVMBuildRetVoid(self.reference) };
+		Instruction(unsafe { LLVMBuildRetVoid(self.reference) })
+	}
+	
+	fn returnValue(&self, value: LLVMValueRef) -> Instruction
+	{
+		Instruction(unsafe { LLVMBuildRet(self.reference, value) })
 	}
 }

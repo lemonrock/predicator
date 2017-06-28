@@ -9,6 +9,26 @@ pub struct FloatConstant
 	value: u64,
 }
 
+impl Constant for FloatConstant
+{
+	#[inline(always)]
+	fn to_LLVMValueRef(&self, context: &Context, constantCache: &mut HashMap<Self, LLVMValueRef>) -> LLVMValueRef
+	{
+		if let Some(extant) = constantCache.get(self)
+		{
+			return *extant;
+		}
+		
+		let typeRef = context.typeRef(&self.llvmType);
+		
+		let value = unsafe { LLVMConstReal(typeRef, transmute(self.value)) };
+		
+		constantCache.insert(self.clone(), value);
+		
+		value
+	}
+}
+
 impl FloatConstant
 {
 	#[inline(always)]
@@ -39,25 +59,5 @@ impl FloatConstant
 			llvmType: LlvmType::Float64,
 			value: value,
 		}
-	}
-}
-
-impl Constant for FloatConstant
-{
-	#[inline(always)]
-	fn to_LLVMValueRef(&self, context: &Context, constantCache: &mut HashMap<Self, LLVMValueRef>) -> LLVMValueRef
-	{
-		if let Some(extant) = constantCache.get(self)
-		{
-			return *extant;
-		}
-		
-		let typeRef = context.typeRef(&self.llvmType);
-		
-		let value = unsafe { LLVMConstReal(typeRef, transmute(self.value)) };
-		
-		constantCache.insert(self.clone(), value);
-		
-		value
 	}
 }

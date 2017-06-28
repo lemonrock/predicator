@@ -27,23 +27,6 @@ impl<'a> BasicBlockBuilder<'a>
 		this
 	}
 	
-	pub fn returnVoid(self)
-	{
-		self.builder.returnVoid();
-	}
-	
-	/*
-		
-		LLVMBuildRet(builder, tmp);
-		
-		
-		We want a return true; block
-		We want a return false; block
-	
-	*/
-	
-	
-	
 	/// It is not clear if this is valid to do whilst a builder is active
 	pub fn moveBefore(&self, before: LLVMBasicBlockRef)
 	{
@@ -54,5 +37,32 @@ impl<'a> BasicBlockBuilder<'a>
 	pub fn moveAfter(&self, after: LLVMBasicBlockRef)
 	{
 		unsafe { LLVMMoveBasicBlockAfter(self.basicBlockReference, after) }
+	}
+	
+	pub fn returnVoid(self)
+	{
+		self.builder.returnVoid();
+	}
+	
+	pub fn returnTrue(self)
+	{
+		self.builder.returnValue(self.True());
+	}
+	
+	pub fn returnFalse(self)
+	{
+		self.builder.returnValue(self.False());
+	}
+	
+	#[inline(always)]
+	fn True(&self) -> LLVMValueRef
+	{
+		self.context.integerConstant(&IntegerConstant::True)
+	}
+	
+	#[inline(always)]
+	fn False(&self) -> LLVMValueRef
+	{
+		self.context.integerConstant(&IntegerConstant::False)
 	}
 }

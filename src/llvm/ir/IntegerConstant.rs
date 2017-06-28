@@ -10,6 +10,27 @@ pub struct IntegerConstant
 	signed: bool,
 }
 
+impl Constant for IntegerConstant
+{
+	#[inline(always)]
+	fn to_LLVMValueRef(&self, context: &Context, constantCache: &mut HashMap<Self, LLVMValueRef>) -> LLVMValueRef
+	{
+		if let Some(extant) = constantCache.get(self)
+		{
+			return *extant;
+		}
+		
+		let typeRef = context.typeRef(&self.llvmType);
+		
+		// NOTE: Need to use LLVMConstIntOfArbitraryPrecision() for 128-bit integers
+		let value = unsafe { LLVMConstInt(typeRef, self.value, 0) };
+		
+		constantCache.insert(self.clone(), value);
+		
+		value
+	}
+}
+
 impl IntegerConstant
 {
 	pub const True: IntegerConstant = IntegerConstant
@@ -120,26 +141,5 @@ impl IntegerConstant
 			value: value,
 			signed: true,
 		}
-	}
-}
-
-impl Constant for IntegerConstant
-{
-	#[inline(always)]
-	fn to_LLVMValueRef(&self, context: &Context, constantCache: &mut HashMap<Self, LLVMValueRef>) -> LLVMValueRef
-	{
-		if let Some(extant) = constantCache.get(self)
-		{
-			return *extant;
-		}
-		
-		let typeRef = context.typeRef(&self.llvmType);
-		
-		// NOTE: Need to use LLVMConstIntOfArbitraryPrecision() for 128-bit integers
-		let value = unsafe { LLVMConstInt(typeRef, self.value, 0) };
-		
-		constantCache.insert(self.clone(), value);
-		
-		value
 	}
 }

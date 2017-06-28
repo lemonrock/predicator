@@ -24,6 +24,7 @@ include!("FunctionAttribute.rs");
 include!("FunctionBuilder.rs");
 include!("FunctionDeclaration.rs");
 include!("FunctionParameter.rs");
+include!("Instruction.rs");
 include!("IntegerConstant.rs");
 include!("LlvmType.rs");
 include!("LLVMTypeRefCache.rs");
