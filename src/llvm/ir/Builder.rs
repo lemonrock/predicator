@@ -32,4 +32,9 @@ impl Builder
 	{
 		Instruction(unsafe { LLVMBuildRet(self.reference, value) })
 	}
+	
+	fn unconditionalBranch(&self, to: LLVMBasicBlockRef) -> Instruction
+	{
+		Instruction(unsafe { LLVMBuildBr(self.reference, to) })
+	}
 }

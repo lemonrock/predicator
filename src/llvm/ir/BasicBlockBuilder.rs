@@ -5,19 +5,25 @@
 pub struct BasicBlockBuilder<'a>
 {
 	context: &'a Context,
+	functionReference: LLVMValueRef,
 	basicBlockReference: LLVMBasicBlockRef,
 	builder: Builder,
 }
 
 impl<'a> BasicBlockBuilder<'a>
 {
-	fn new(context: &'a Context, basicBlockReference: LLVMBasicBlockRef) -> Self
+	#[inline(always)]
+	fn createBasicBlock(name: &str, context: &'a Context, functionReference: LLVMValueRef) -> BasicBlockBuilder<'a>
 	{
+		let name = CString::new(name.as_bytes()).unwrap();
+		let basicBlockReference = unsafe { LLVMAppendBasicBlockInContext(context.reference, functionReference, name.as_ptr()) };
+		
 		let builder = context.builder();
 		
 		let this = Self
 		{
 			context: context,
+			functionReference: functionReference,
 			basicBlockReference: basicBlockReference,
 			builder: builder,
 		};
@@ -27,16 +33,10 @@ impl<'a> BasicBlockBuilder<'a>
 		this
 	}
 	
-	/// It is not clear if this is valid to do whilst a builder is active
-	pub fn moveBefore(&self, before: LLVMBasicBlockRef)
+	#[inline(always)]
+	pub fn newBasicBlock(&self, to: &str) -> BasicBlockBuilder<'a>
 	{
-		unsafe { LLVMMoveBasicBlockBefore(self.basicBlockReference, before) }
-	}
-	
-	/// It is not clear if this is valid to do whilst a builder is active
-	pub fn moveAfter(&self, after: LLVMBasicBlockRef)
-	{
-		unsafe { LLVMMoveBasicBlockAfter(self.basicBlockReference, after) }
+		Self::createBasicBlock(to, self.context, self.functionReference)
 	}
 	
 	pub fn returnVoid(self)
@@ -52,6 +52,15 @@ impl<'a> BasicBlockBuilder<'a>
 	pub fn returnFalse(self)
 	{
 		self.builder.returnValue(self.False());
+	}
+	
+	// We need some name management
+	
+	pub fn unconditionalBranchWithCreation(self, to: &str) -> BasicBlockBuilder<'a>
+	{
+		let to = self.newBasicBlock(to);
+		self.builder.unconditionalBranch(to.basicBlockReference);
+		to
 	}
 	
 	#[inline(always)]

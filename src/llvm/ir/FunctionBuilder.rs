@@ -11,18 +11,8 @@ pub struct FunctionBuilder<'a>
 impl<'a> FunctionBuilder<'a>
 {
 	#[inline(always)]
-	pub fn appendBasicBlock(&'a mut self, name: &str) -> BasicBlockBuilder<'a>
+	pub fn withFirstBasicBlock(self, name: &str) -> BasicBlockBuilder<'a>
 	{
-		let name = CString::new(name.as_bytes()).unwrap();
-		let basicBlockReference = unsafe { LLVMAppendBasicBlockInContext(self.context.reference, self.functionReference, name.as_ptr()) };
-		BasicBlockBuilder::new(self.context, basicBlockReference)
-	}
-	
-	#[inline(always)]
-	pub fn insertBasicBlockBefore(&'a mut self, name: &str, before: LLVMBasicBlockRef) -> BasicBlockBuilder<'a>
-	{
-		let name = CString::new(name.as_bytes()).unwrap();
-		let basicBlockReference = unsafe { LLVMInsertBasicBlockInContext(self.context.reference, before, name.as_ptr()) };
-		BasicBlockBuilder::new(self.context, basicBlockReference)
+		BasicBlockBuilder::createBasicBlock(name, self.context, self.functionReference)
 	}
 }
