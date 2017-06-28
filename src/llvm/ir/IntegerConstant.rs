@@ -12,27 +12,19 @@ pub struct IntegerConstant
 
 impl IntegerConstant
 {
-	#[inline(always)]
-	pub fn constantIntegerTrue() -> Self
+	pub const True: IntegerConstant = IntegerConstant
 	{
-		Self
-		{
-			llvmType: LlvmType::Int1,
-			value: 1,
-			signed: false,
-		}
-	}
+		llvmType: LlvmType::Int1,
+		value: 1,
+		signed: false,
+	};
 	
-	#[inline(always)]
-	pub fn constantIntegerFalse() -> Self
+	pub const False: IntegerConstant = IntegerConstant
 	{
-		Self
-		{
-			llvmType: LlvmType::Int1,
-			value: 0,
-			signed: false,
-		}
-	}
+		llvmType: LlvmType::Int1,
+		value: 1,
+		signed: false,
+	};
 	
 	#[inline(always)]
 	pub fn constantInteger8BitUnsigned(value: u8) -> Self
@@ -48,12 +40,84 @@ impl IntegerConstant
 	#[inline(always)]
 	pub fn constantInteger8BitSigned(value: i8) -> Self
 	{
-		let value: i8 = unsafe { transmute(value) };
+		let value: u8 = unsafe { transmute(value) };
 		
 		Self
 		{
 			llvmType: LlvmType::Int8,
 			value: value as u64,
+			signed: true,
+		}
+	}
+	
+	#[inline(always)]
+	pub fn constantInteger16BitUnsigned(value: u16) -> Self
+	{
+		Self
+		{
+			llvmType: LlvmType::Int16,
+			value: value as u64,
+			signed: false,
+		}
+	}
+	
+	#[inline(always)]
+	pub fn constantInteger16BitSigned(value: i16) -> Self
+	{
+		let value: u16 = unsafe { transmute(value) };
+		
+		Self
+		{
+			llvmType: LlvmType::Int16,
+			value: value as u64,
+			signed: true,
+		}
+	}
+	
+	#[inline(always)]
+	pub fn constantInteger32BitUnsigned(value: u32) -> Self
+	{
+		Self
+		{
+			llvmType: LlvmType::Int32,
+			value: value as u64,
+			signed: false,
+		}
+	}
+	
+	#[inline(always)]
+	pub fn constantInteger32BitSigned(value: i32) -> Self
+	{
+		let value: u32 = unsafe { transmute(value) };
+		
+		Self
+		{
+			llvmType: LlvmType::Int32,
+			value: value as u64,
+			signed: true,
+		}
+	}
+	
+	#[inline(always)]
+	pub fn constantInteger64BitUnsigned(value: u64) -> Self
+	{
+		Self
+		{
+			llvmType: LlvmType::Int64,
+			value: value,
+			signed: false,
+		}
+	}
+	
+	#[inline(always)]
+	pub fn constantInteger64BitSigned(value: i64) -> Self
+	{
+		let value: u64 = unsafe { transmute(value) };
+		
+		Self
+		{
+			llvmType: LlvmType::Int64,
+			value: value,
 			signed: true,
 		}
 	}
