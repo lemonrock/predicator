@@ -6,22 +6,14 @@ pub struct BasicBlockBuilder<'a>
 {
 	context: &'a Context,
 	basicBlockReference: LLVMBasicBlockRef,
-	builder: LLVMBuilderRef,
-}
-
-impl<'a> Drop for BasicBlockBuilder<'a>
-{
-	fn drop(&mut self)
-	{
-		unsafe { LLVMDisposeBuilder(self.builder) };
-	}
+	builder: Builder,
 }
 
 impl<'a> BasicBlockBuilder<'a>
 {
 	fn new(context: &'a Context, basicBlockReference: LLVMBasicBlockRef) -> Self
 	{
-		let builder = unsafe { LLVMCreateBuilderInContext(context.reference) };
+		let builder = context.builder();
 		
 		let this = Self
 		{
@@ -30,10 +22,27 @@ impl<'a> BasicBlockBuilder<'a>
 			builder: builder,
 		};
 		
-		unsafe { LLVMPositionBuilderAtEnd(builder, basicBlockReference) };
+		this.builder.positionAtEndOfBasicBlock(this.basicBlockReference);
 		
 		this
 	}
+	
+	pub fn returnVoid(self)
+	{
+		self.builder.returnVoid();
+	}
+	
+	/*
+		
+		LLVMBuildRet(builder, tmp);
+		
+		
+		We want a return true; block
+		We want a return false; block
+	
+	*/
+	
+	
 	
 	/// It is not clear if this is valid to do whilst a builder is active
 	pub fn moveBefore(&self, before: LLVMBasicBlockRef)

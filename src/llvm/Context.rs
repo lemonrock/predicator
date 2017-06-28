@@ -130,6 +130,18 @@ impl Context
 	}
 	
 	#[inline(always)]
+	pub fn builder(&self) -> Builder
+	{
+		let reference = unsafe { LLVMCreateBuilderInContext(self.reference) };
+		
+		Builder
+		{
+			reference: reference,
+			parentDropWrapper: self.dropWrapper.clone(),
+		}
+	}
+	
+	#[inline(always)]
 	pub fn typeRef(&self, llvmType: &LlvmType) -> LLVMTypeRef
 	{
 		llvmType.to_LLVMTypeRef(self.reference, &mut self.typeRefCache.borrow_mut())

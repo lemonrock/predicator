@@ -2,13 +2,29 @@
 // Copyright © 2017 The developers of predicator. See the COPYRIGHT file in the top-level directory of this distribution and at https://raw.githubusercontent.com/lemonrock/predicator/master/COPYRIGHT.
 
 
-pub(crate) struct ContextDropWrapper(LLVMContextRef);
-
-impl Drop for ContextDropWrapper
+pub struct Builder
 {
-	#[inline(always)]
+	pub(crate) reference: LLVMBuilderRef,
+	pub(crate) parentDropWrapper: Rc<ContextDropWrapper>,
+}
+
+impl Drop for Builder
+{
 	fn drop(&mut self)
 	{
-		unsafe { LLVMContextDispose(self.0) }
+		unsafe { LLVMDisposeBuilder(self.reference) };
+	}
+}
+
+impl Builder
+{
+	fn positionAtEndOfBasicBlock(&self, basicBlockReference: LLVMBasicBlockRef)
+	{
+		unsafe { LLVMPositionBuilderAtEnd(self.reference, basicBlockReference) }
+	}
+	
+	fn returnVoid(&self)
+	{
+		unsafe { LLVMBuildRetVoid(self.reference) };
 	}
 }

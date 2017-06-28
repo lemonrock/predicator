@@ -17,7 +17,7 @@ pub struct FunctionDeclaration
 impl FunctionDeclaration
 {
 	#[inline(always)]
-	fn public(&self, name: &str, returns: FunctionParameter, parameters: Vec<FunctionParameter>, functionAttributes: HashSet<FunctionAttribute>) -> Self
+	pub fn public(&self, name: &str, returns: FunctionParameter, parameters: Vec<FunctionParameter>, functionAttributes: HashSet<FunctionAttribute>) -> Self
 	{
 		Self
 		{
@@ -33,7 +33,7 @@ impl FunctionDeclaration
 	}
 	
 	#[inline(always)]
-	fn private(&self, name: &str, returns: FunctionParameter, parameters: Vec<FunctionParameter>, functionAttributes: HashSet<FunctionAttribute>) -> Self
+	pub fn private(&self, name: &str, returns: FunctionParameter, parameters: Vec<FunctionParameter>, functionAttributes: HashSet<FunctionAttribute>) -> Self
 	{
 		Self
 		{
@@ -49,7 +49,7 @@ impl FunctionDeclaration
 	}
 	
 	#[inline(always)]
-	fn create<'a>(mut self, context: &'a Context, module: &Module) -> FunctionBuilder<'a>
+	pub(crate) fn create<'a>(mut self, context: &'a Context, module: &Module) -> FunctionBuilder<'a>
 	{
 		let functionType = context.typeRef(&LlvmType::Function { returns: Box::new(self.returns.0), parameters: self.parameters.iter().map(|ref functionParameter| functionParameter.0.clone() ).collect(), hasVarArgs: self.hasVarArgs });
 		let functionReference = unsafe { LLVMAddFunction(module.reference, self.name.as_ptr(), functionType) };
@@ -82,6 +82,11 @@ impl FunctionDeclaration
 		if let Some(ref garbageCollectorStrategy) = self.garbageCollectorStrategy
 		{
 			unsafe { LLVMSetGC(functionReference, garbageCollectorStrategy.as_ptr()) };
+		}
+		
+		if let Some(ref mut personalityFunctionReference) = self.personalityFunctionReference
+		{
+			unsafe { LLVMSetPersonalityFn(functionReference, personalityFunctionReference) };
 		}
 		
 		FunctionBuilder

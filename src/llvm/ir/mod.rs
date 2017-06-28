@@ -13,6 +13,7 @@ use ::std::cell::RefCell;
 
 include!("Attribute.rs");
 include!("BasicBlockBuilder.rs");
+include!("Builder.rs");
 include!("EnumAttributeIdentifier.rs");
 include!("EnumAttributeIdentifierCache.rs");
 include!("EnumAttributeName.rs");
