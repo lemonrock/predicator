@@ -6,9 +6,11 @@ include!("handle_boolean_and_error_message.rs");
 include!("panic_on_false.rs");
 
 
+use self::ir::*;
 use self::machineCodeJit::*;
 use self::orcJit::*;
 use ::libc::c_char;
+use ::libc::c_uint;
 use ::libc::c_void;
 use ::llvm_sys::analysis::*;
 use ::llvm_sys::bit_reader::*;
@@ -25,6 +27,8 @@ use ::llvm_sys::prelude::*;
 use ::llvm_sys::target::*;
 use ::llvm_sys::target_machine::*;
 use ::rust_extra::unlikely;
+use ::std::cell::RefCell;
+use ::std::collections::HashMap;
 use ::std::ffi::CStr;
 use ::std::ffi::CString;
 use ::std::mem::uninitialized;
@@ -34,6 +38,7 @@ use ::std::ptr::null_mut;
 use ::std::rc::Rc;
 
 
+pub mod ir;
 pub mod machineCodeJit;
 pub mod orcJit;
 

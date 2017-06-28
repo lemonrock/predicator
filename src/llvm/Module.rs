@@ -71,4 +71,9 @@ impl Module
 			}
 		)
 	}
+	
+	pub fn addFunction(&self, name: &CStr, functionType: LLVMTypeRef)
+	{
+		let LLVMValueRef = unsafe { LLVMAddFunction(self.reference, name.as_ptr(), functionType) };
+	}
 }

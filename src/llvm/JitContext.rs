@@ -11,9 +11,9 @@ pub struct JitContext<SR: SymbolResolver>
 
 impl<SR: SymbolResolver> JitContext<SR>
 {
-	pub fn new(symbolResolver: SR) -> Result<Self, String>
+	pub fn new(symbolResolver: SR, enumAttributeIdentifierCache: EnumAttributeIdentifierCache) -> Result<Self, String>
 	{
-		let context = Context::new()?;
+		let context = Context::new(enumAttributeIdentifierCache)?;
 		let orcJitStack = Target::createHostOrcJitStack()?;
 		
 		Ok

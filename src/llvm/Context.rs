@@ -7,12 +7,16 @@ pub struct Context
 {
 	reference: LLVMContextRef,
 	dropWrapper: Rc<ContextDropWrapper>,
+	typeRefCache: RefCell<LLVMTypeRefCache>,
+	functionAttributeCache: RefCell<HashMap<FunctionAttribute, LLVMAttributeRef>>,
+	parameterAttributeCache: RefCell<HashMap<ParameterAttribute, LLVMAttributeRef>>,
+	enumAttributeIdentifierCache: EnumAttributeIdentifierCache,
 }
 
 impl Context
 {
 	#[inline(always)]
-	pub fn new() -> Result<Self, String>
+	pub fn new(enumAttributeIdentifierCache: EnumAttributeIdentifierCache) -> Result<Self, String>
 	{
 		let reference = unsafe { LLVMContextCreate() };
 		if reference.is_null()
@@ -26,7 +30,11 @@ impl Context
 				Self
 				{
 					reference: reference,
-					dropWrapper: Rc::new(ContextDropWrapper(reference))
+					dropWrapper: Rc::new(ContextDropWrapper(reference)),
+					typeRefCache: RefCell::new(LLVMTypeRefCache::new()),
+					functionAttributeCache: RefCell::new(HashMap::with_capacity(8)),
+					parameterAttributeCache: RefCell::new(HashMap::with_capacity(8)),
+					enumAttributeIdentifierCache: enumAttributeIdentifierCache,
 				}
 			)
 		}
@@ -119,5 +127,40 @@ impl Context
 				parentDropWrapper: self.dropWrapper.clone(),
 			}
 		)
+	}
+	
+	#[inline(always)]
+	pub fn typeRef(&self, llvmType: &LlvmType) -> LLVMTypeRef
+	{
+		llvmType.to_LLVMTypeRef(self.reference, &mut self.typeRefCache.borrow_mut())
+	}
+	
+	#[inline(always)]
+	pub fn functionAttributeRef(&self, attribute: FunctionAttribute) -> LLVMAttributeRef
+	{
+		self.attributeRef(attribute, &mut self.functionAttributeCache.borrow_mut())
+	}
+	
+	#[inline(always)]
+	pub fn parameterAttributeRef(&self, attribute: ParameterAttribute) -> LLVMAttributeRef
+	{
+		self.attributeRef(attribute, &mut self.parameterAttributeCache.borrow_mut())
+	}
+	
+	#[inline(always)]
+	fn attributeRef<A: Attribute>(&self, attribute: A, cache: &mut HashMap<A, LLVMAttributeRef>) -> LLVMAttributeRef
+	{
+		if let Some(attribute) = cache.get(&attribute)
+		{
+			return *attribute;
+		}
+		
+		let (enumAttributeName, value) = attribute.to_value();
+		let identifier = self.enumAttributeIdentifierCache.identifier(enumAttributeName);
+		let attributeRef = unsafe { LLVMCreateEnumAttribute(self.reference, identifier.0, value) };
+		
+		cache.insert(attribute, attributeRef);
+		
+		attributeRef
 	}
 }

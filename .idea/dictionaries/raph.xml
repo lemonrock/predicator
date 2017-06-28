@@ -5,6 +5,7 @@
       <w>bindgen</w>
       <w>chunksize</w>
       <w>cloexec</w>
+      <w>conv</w>
       <w>cvlan</w>
       <w>datagrams</w>
       <w>datatype</w>
