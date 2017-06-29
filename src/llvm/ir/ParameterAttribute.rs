@@ -16,17 +16,15 @@ pub enum ParameterAttribute
 	noalias,
 	nocapture,
 	nest,
+	readnone, // Overlaps with function attributes
+	readonly, // Overlaps with function attributes
 	returned,
 	nonnull,
 	dereferenceable { n: u64 },
 	dereferenceable_or_null { n: u64 },
 	swiftself,
 	swifterror,
-	
-	StringValueless(&'static [u8]),
-	StringValue(&'static [u8], &'static [u8]),
-	StringBoolean(&'static [u8], bool),
-	StringPowerOfTwo(&'static [u8], PowerOfTwoThirtyTwoBit),
+	writeonly, // Overlaps with function attributes
 }
 
 impl Attribute for ParameterAttribute
@@ -48,32 +46,15 @@ impl Attribute for ParameterAttribute
 			noalias => context.enumAttribute(EnumAttributeName::noalias, 0),
 			nocapture => context.enumAttribute(EnumAttributeName::nocapture, 0),
 			nest => context.enumAttribute(EnumAttributeName::nest, 0),
+			readnone => context.enumAttribute(EnumAttributeName::readnone, 0),
+			readonly => context.enumAttribute(EnumAttributeName::readonly, 0),
 			returned => context.enumAttribute(EnumAttributeName::returned, 0),
 			nonnull => context.enumAttribute(EnumAttributeName::nonnull, 0),
 			dereferenceable { n } => context.enumAttribute(EnumAttributeName::dereferenceable, n),
 			dereferenceable_or_null { n } => context.enumAttribute(EnumAttributeName::dereferenceable_or_null, n),
 			swiftself => context.enumAttribute(EnumAttributeName::swiftself, 0),
 			swifterror => context.enumAttribute(EnumAttributeName::swifterror, 0),
-			
-			StringValueless(name) => context.stringAttribute(name, None),
-			StringValue(name, value) => context.stringAttribute(name, Some(value)),
-			StringBoolean(name, boolean) =>
-			{
-				if boolean
-				{
-					context.stringAttribute(name, Some(b"true"))
-				}
-				else
-				{
-					context.stringAttribute(name, Some(b"false"))
-				}
-			}
-			StringPowerOfTwo(name, powerOfTwo) =>
-			{
-				let value = format!("{}", powerOfTwo.as_u32());
-				
-				context.stringAttribute(name, Some(value.as_bytes()))
-			},
+			writeonly => context.enumAttribute(EnumAttributeName::writeonly, 0),
 		}
 	}
 }

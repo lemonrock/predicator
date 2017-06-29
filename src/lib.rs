@@ -11,6 +11,7 @@
 #[macro_use] extern crate cpp;
 extern crate libc;
 extern crate llvm_sys;
+#[macro_use] extern crate maplit;
 extern crate rand;
 extern crate rust_extra;
 

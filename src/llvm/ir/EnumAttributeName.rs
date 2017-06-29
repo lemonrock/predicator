@@ -32,10 +32,7 @@ pub enum EnumAttributeName
 	optsize,
 	patchable_function,
 	probe_stack,
-	readnone,
-	readonly,
 	stack_probe_size,
-	writeonly,
 	argmemonly,
 	safestack,
 	sanitize_address,
@@ -65,6 +62,11 @@ pub enum EnumAttributeName
 	dereferenceable_or_null,
 	swiftself,
 	swifterror,
+	
+	// Both
+	readnone,
+	readonly,
+	writeonly,
 }
 
 impl EnumAttributeName

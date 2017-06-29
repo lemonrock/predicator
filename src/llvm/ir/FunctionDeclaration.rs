@@ -9,6 +9,7 @@ pub struct FunctionDeclaration
 	parameters: Vec<FunctionParameter>,
 	hasVarArgs: bool,
 	functionAttributes: HashSet<FunctionAttribute>,
+	targetDependentFunctionAttributes: HashSet<TargetDependentFunctionAttribute>,
 	callingConvention: UsefulCallingConvention, // Ordinarily LLVMCallConv isn't usable
 	garbageCollectorStrategy: Option<CString>, // None
 	personalityFunctionReference: Option<LLVMValue>, // None
@@ -16,10 +17,46 @@ pub struct FunctionDeclaration
 
 impl FunctionDeclaration
 {
-	// noinline nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="true" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="core2" "target-features"="+cx16,+fxsr,+mmx,+sse,+sse2,+sse3,+ssse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false"
 	#[inline(always)]
-	pub fn public(&self, name: &str, returns: FunctionParameter, parameters: Vec<FunctionParameter>, functionAttributes: HashSet<FunctionAttribute>) -> Self
+	pub fn publicReadOnly(&self, name: &str, returns: FunctionParameter, parameters: Vec<FunctionParameter>) -> Self
 	{
+		use self::FunctionAttribute::*;
+		
+		let functionAttributes = hashset!
+		{
+			norecurse,
+			readonly,
+			
+			nounwind,
+			uwtable,
+			
+			sspstrong,
+		};
+		
+		use self::TargetFeature::*;
+		use self::ToggledTargetFeature::*;
+		let targetDependentFunctionAttributes = hashset!
+		{
+			TargetDependentFunctionAttribute::stack_protector_buffer_size(PowerOfTwoThirtyTwoBit::_8),
+			
+			TargetDependentFunctionAttribute::disable_tail_calls(false),
+			TargetDependentFunctionAttribute::no_frame_pointer_elim(true),
+			TargetDependentFunctionAttribute::no_frame_pointer_elim_non_leaf,
+			TargetDependentFunctionAttribute::no_jump_tables(false),
+			
+			TargetDependentFunctionAttribute::correctly_rounded_divide_sqrt_fp_math(false),
+			TargetDependentFunctionAttribute::less_precise_fpmad(false),
+			TargetDependentFunctionAttribute::no_infs_fp_math(false),
+			TargetDependentFunctionAttribute::no_nans_fp_math(false),
+			TargetDependentFunctionAttribute::no_signed_zeros_fp_math(false),
+			TargetDependentFunctionAttribute::no_trapping_math(false),
+			TargetDependentFunctionAttribute::unsafe_fp_math(false),
+			TargetDependentFunctionAttribute::use_soft_float(false),
+			
+			//TargetDependentFunctionAttribute::target_cpu(b"core2"),
+			TargetDependentFunctionAttribute::target_features(vec![On(cx16), On(fxsr), On(cx16), On(sse), On(sse2), On(ssse3), On(x87)]),
+		};
+		
 		Self
 		{
 			name: CString::new(name).unwrap(),
@@ -27,6 +64,7 @@ impl FunctionDeclaration
 			parameters: parameters,
 			hasVarArgs: false,
 			functionAttributes: functionAttributes,
+			targetDependentFunctionAttributes: targetDependentFunctionAttributes,
 			callingConvention: UsefulCallingConvention::C,
 			garbageCollectorStrategy: None,
 			personalityFunctionReference: None,
@@ -34,7 +72,7 @@ impl FunctionDeclaration
 	}
 	
 	#[inline(always)]
-	pub fn private(&self, name: &str, returns: FunctionParameter, parameters: Vec<FunctionParameter>, functionAttributes: HashSet<FunctionAttribute>) -> Self
+	pub fn private(&self, name: &str, returns: FunctionParameter, parameters: Vec<FunctionParameter>, functionAttributes: HashSet<FunctionAttribute>, targetDependentFunctionAttributes: HashSet<TargetDependentFunctionAttribute>) -> Self
 	{
 		Self
 		{
@@ -43,6 +81,7 @@ impl FunctionDeclaration
 			parameters: parameters,
 			hasVarArgs: false,
 			functionAttributes: functionAttributes,
+			targetDependentFunctionAttributes: targetDependentFunctionAttributes,
 			callingConvention: UsefulCallingConvention::Fast,
 			garbageCollectorStrategy: None,
 			personalityFunctionReference: None,
@@ -76,6 +115,11 @@ impl FunctionDeclaration
 		{
 			let attributeRef = context.functionAttributeRef(attribute);
 			unsafe { LLVMAddAttributeAtIndex(functionReference, LLVMAttributeFunctionIndex, attributeRef) };
+		}
+		
+		for attribute in self.targetDependentFunctionAttributes.iter()
+		{
+			attribute.addToFunction(functionReference);
 		}
 		
 		unsafe { LLVMSetFunctionCallConv(functionReference, self.callingConvention as u32) };

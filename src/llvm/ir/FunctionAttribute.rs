@@ -29,11 +29,11 @@ pub enum FunctionAttribute
 	nounwind,
 	optnone,
 	optsize,
-	patchable_function,
-	probe_stack,
+	//patchable_function(PatachableFunctionKind), prologue-short-redirect; string attribute, ?string attribute
+	//probe_stack, ?string attribute
 	readnone,
 	readonly,
-	stack_probe_size,
+	//stack_probe_size(PowerOfTwoThirtyTwoBit), ?string attribute
 	writeonly,
 	argmemonly,
 	safestack,
@@ -44,14 +44,8 @@ pub enum FunctionAttribute
 	ssp,
 	sspreq,
 	sspstrong,
-	thunk,
+	//thunk, ?string attribute
 	uwtable,
-	
-	StringValueless(&'static [u8]),
-	StringValue(&'static [u8], &'static [u8]),
-	StringBoolean(&'static [u8], bool),
-	StringPowerOfTwo(&'static [u8], PowerOfTwoThirtyTwoBit),
-	StringFeatures(&'static [u8], Vec<ToggledTargetFeature>)
 }
 
 impl Attribute for FunctionAttribute
@@ -86,11 +80,11 @@ impl Attribute for FunctionAttribute
 			nounwind => context.enumAttribute(EnumAttributeName::nounwind, 0),
 			optnone => context.enumAttribute(EnumAttributeName::optnone, 0),
 			optsize => context.enumAttribute(EnumAttributeName::optsize, 0),
-			patchable_function => context.enumAttribute(EnumAttributeName::patchable_function, 0),
-			probe_stack => context.enumAttribute(EnumAttributeName::probe_stack, 0),
+			//patchable_function => context.enumAttribute(EnumAttributeName::patchable_function, 0),
+			//probe_stack => context.enumAttribute(EnumAttributeName::probe_stack, 0),
 			readnone => context.enumAttribute(EnumAttributeName::readnone, 0),
 			readonly => context.enumAttribute(EnumAttributeName::readonly, 0),
-			stack_probe_size => context.enumAttribute(EnumAttributeName::stack_probe_size, 0),
+			//stack_probe_size => context.enumAttribute(EnumAttributeName::stack_probe_size, 0),
 			writeonly => context.enumAttribute(EnumAttributeName::writeonly, 0),
 			argmemonly => context.enumAttribute(EnumAttributeName::argmemonly, 0),
 			safestack => context.enumAttribute(EnumAttributeName::safestack, 0),
@@ -101,42 +95,8 @@ impl Attribute for FunctionAttribute
 			ssp => context.enumAttribute(EnumAttributeName::ssp, 0),
 			sspreq => context.enumAttribute(EnumAttributeName::sspreq, 0),
 			sspstrong => context.enumAttribute(EnumAttributeName::sspstrong, 0),
-			thunk => context.enumAttribute(EnumAttributeName::thunk, 0),
+			//thunk => context.enumAttribute(EnumAttributeName::thunk, 0),
 			uwtable => context.enumAttribute(EnumAttributeName::uwtable, 0),
-			
-			StringValueless(name) => context.stringAttribute(name, None),
-			StringValue(name, value) => context.stringAttribute(name, Some(value)),
-			StringBoolean(name, boolean) =>
-			{
-				if boolean
-				{
-					context.stringAttribute(name, Some(b"true"))
-				}
-				else
-				{
-					context.stringAttribute(name, Some(b"false"))
-				}
-			}
-			StringPowerOfTwo(name, powerOfTwo) =>
-			{
-				let value = format!("{}", powerOfTwo.as_u32());
-				
-				context.stringAttribute(name, Some(value.as_bytes()))
-			},
-			StringFeatures(name, ref toggledFeatures) =>
-			{
-				let mut features = String::with_capacity(32);
-				let mut afterFirst = false;
-				for toggledFeature in toggledFeatures.iter()
-				{
-					if afterFirst
-					{
-						features.push(',');
-					}
-					features.push_str(toggledFeature.value());
-				}
-				context.stringAttribute(name, Some(features.as_bytes()))
-			}
 		}
 	}
 }
