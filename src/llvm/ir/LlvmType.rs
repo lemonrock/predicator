@@ -23,9 +23,15 @@ pub enum LlvmType
 	Label,
 	MmxX86,
 	
-	Struct { name: Option<CString>, elements: Vec<LlvmType>, isPacked: bool },
+	Struct { name: Option<CString>, body: StructBody },
 	
-	Function { returns: Box<LlvmType>, parameters: Vec<LlvmType>, hasVarArgs: bool }
+	Function { returns: Box<LlvmType>, parameters: Vec<LlvmType>, hasVarArgs: bool },
+	
+	Array { elementType: Box<LlvmType>, numberOfElements: u32 },
+	
+	Vector { elementType: Box<LlvmType>, numberOfElements: u32 },
+	
+	Pointer { elementType: Box<LlvmType>, addressSpace: u32 },
 }
 
 impl LlvmType
@@ -62,11 +68,11 @@ impl LlvmType
 				Label => LLVMLabelTypeInContext(C),
 				MmxX86 => LLVMX86MMXTypeInContext(C),
 				
-				Struct { ref name, isPacked, ref elements } =>
+				Struct { ref name, ref body } =>
 				{
-					let mut ElementTypes: Vec<LLVMTypeRef> = elements.iter().map(|llvmType| llvmType.to_LLVMTypeRef(C, typeRefCache)).collect();
+					let mut ElementTypes: Vec<LLVMTypeRef> = body.elements.iter().map(|llvmType| llvmType.to_LLVMTypeRef(C, typeRefCache)).collect();
 					
-					let Packed = if isPacked
+					let Packed = if body.isPacked
 					{
 						1
 					}
@@ -86,6 +92,7 @@ impl LlvmType
 							StructTy
 						}
 					}
+					
 				}
 				
 				Function { ref returns, ref parameters, hasVarArgs } =>
@@ -104,12 +111,53 @@ impl LlvmType
 					};
 					
 					LLVMFunctionType(ReturnType, ParamTypes.as_mut_ptr(), ParamTypes.len() as c_uint, IsVarArg)
-				}
+				},
+				
+				Array { ref elementType, ref numberOfElements } => LLVMArrayType(elementType.to_LLVMTypeRef(C, typeRefCache), *numberOfElements),
+				
+				Vector { ref elementType, ref numberOfElements } => LLVMVectorType(elementType.to_LLVMTypeRef(C, typeRefCache), *numberOfElements),
+				
+				Pointer { ref elementType, ref addressSpace } => LLVMPointerType(elementType.to_LLVMTypeRef(C, typeRefCache), *addressSpace),
 			}
 		};
 		
 		typeRefCache.insert(self.clone(), value);
 		
 		value
+	}
+	
+	pub fn anonymousStruct(isPacked: bool, elements: Vec<LlvmType>) -> Self
+	{
+		LlvmType::Struct
+		{
+			name: None,
+			body: StructBody
+			{
+				isPacked,
+				elements,
+			}
+		}
+	}
+	
+	pub fn namedStruct(name: &str, isPacked: bool, elements: Vec<LlvmType>) -> Self
+	{
+		LlvmType::Struct
+		{
+			name: Some(CString::new(name).unwrap()),
+			body: StructBody
+			{
+				isPacked,
+				elements,
+			}
+		}
+	}
+	
+	pub fn pointer(of: LlvmType) -> Self
+	{
+		LlvmType::Pointer
+		{
+			elementType: Box::new(of),
+			addressSpace: 0,
+		}
 	}
 }

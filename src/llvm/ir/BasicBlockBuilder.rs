@@ -98,4 +98,38 @@ impl<'a> BasicBlockBuilder<'a>
 	{
 		self.context.integerConstant(constant)
 	}
+	
+	
+	
+	pub fn push(&self)
+	{
+		let ClientIdentifierType = LlvmType::Int64;
+		let SubscriptionForThatClientIdentifierType = LlvmType::Int64;
+		
+		let SubscriberType = LlvmType::namedStruct
+		(
+			"Subscriber",
+			false,
+			vec!
+			[
+				ClientIdentifierType,                     // clientIdentifier
+				SubscriptionForThatClientIdentifierType,  // subscriberIdentifier
+			]
+		);
+		
+		let CountType = LlvmType::Int64;
+		let SubscriberPointerType = LlvmType::pointer(SubscriberType);
+		
+		let SubscribersType = LlvmType::namedStruct
+		(
+			"Subscribers",
+			false,
+			vec!
+			[
+				CountType,              // count
+				SubscriberPointerType,  // subscribers (malloc'd in advance)
+			]
+		);
+		
+	}
 }

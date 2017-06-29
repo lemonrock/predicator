@@ -13,8 +13,10 @@ pub struct IntegerConstant
 impl Constant for IntegerConstant
 {
 	#[inline(always)]
-	fn to_LLVMValueRef(&self, context: &Context, constantCache: &mut HashMap<Self, LLVMValueRef>) -> LLVMValueRef
+	fn to_LLVMValueRef(&self, context: &Context) -> LLVMValueRef
 	{
+		let mut constantCache = context.integerConstantCache.borrow_mut();
+		
 		if let Some(extant) = constantCache.get(self)
 		{
 			return *extant;
@@ -28,6 +30,12 @@ impl Constant for IntegerConstant
 		constantCache.insert(self.clone(), value);
 		
 		value
+	}
+	
+	#[inline(always)]
+	fn llvmType(&self) -> &LlvmType
+	{
+		&self.llvmType
 	}
 }
 

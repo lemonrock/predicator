@@ -2,11 +2,9 @@
 // Copyright © 2017 The developers of predicator. See the COPYRIGHT file in the top-level directory of this distribution and at https://raw.githubusercontent.com/lemonrock/predicator/master/COPYRIGHT.
 
 
-pub trait Constant: Sized
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct StructBody
 {
-	#[inline(always)]
-	fn to_LLVMValueRef(&self, context: &Context) -> LLVMValueRef;
-	
-	#[inline(always)]
-	fn llvmType(&self) -> &LlvmType;
+	pub isPacked: bool,
+	pub elements: Vec<LlvmType>,
 }

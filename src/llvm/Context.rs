@@ -8,8 +8,9 @@ pub struct Context
 	reference: LLVMContextRef,
 	dropWrapper: Rc<ContextDropWrapper>,
 	typeRefCache: RefCell<LLVMTypeRefCache>,
-	integerConstantCache: RefCell<HashMap<IntegerConstant, LLVMValueRef>>,
-	floatConstantCache: RefCell<HashMap<FloatConstant, LLVMValueRef>>,
+	pub(crate) integerConstantCache: RefCell<HashMap<IntegerConstant, LLVMValueRef>>,
+	pub(crate) floatConstantCache: RefCell<HashMap<FloatConstant, LLVMValueRef>>,
+	pub(crate) structConstantCache: RefCell<HashMap<StructConstant, LLVMValueRef>>,
 	functionAttributeCache: RefCell<HashMap<FunctionAttribute, LLVMAttributeRef>>,
 	parameterAttributeCache: RefCell<HashMap<ParameterAttribute, LLVMAttributeRef>>,
 	enumAttributeIdentifierCache: EnumAttributeIdentifierCache,
@@ -36,6 +37,7 @@ impl Context
 					typeRefCache: RefCell::new(LLVMTypeRefCache::new()),
 					integerConstantCache: RefCell::new(HashMap::new()),
 					floatConstantCache: RefCell::new(HashMap::new()),
+					structConstantCache: RefCell::new(HashMap::new()),
 					functionAttributeCache: RefCell::new(HashMap::with_capacity(8)),
 					parameterAttributeCache: RefCell::new(HashMap::with_capacity(8)),
 					enumAttributeIdentifierCache: enumAttributeIdentifierCache,
@@ -154,13 +156,13 @@ impl Context
 	#[inline(always)]
 	pub fn integerConstant(&self, constant: &IntegerConstant) -> LLVMValueRef
 	{
-		constant.to_LLVMValueRef(self, &mut self.integerConstantCache.borrow_mut())
+		constant.to_LLVMValueRef(self)
 	}
 	
 	#[inline(always)]
 	pub fn floatConstant(&self, constant: &FloatConstant) -> LLVMValueRef
 	{
-		constant.to_LLVMValueRef(self, &mut self.floatConstantCache.borrow_mut())
+		constant.to_LLVMValueRef(self)
 	}
 	
 	#[inline(always)]

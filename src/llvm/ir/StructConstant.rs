@@ -3,18 +3,18 @@
 
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct FloatConstant
+pub struct StructConstant
 {
 	llvmType: LlvmType,
-	value: u64,
+	values: Vec<AnyConstant>,
 }
 
-impl Constant for FloatConstant
+impl Constant for StructConstant
 {
 	#[inline(always)]
 	fn to_LLVMValueRef(&self, context: &Context) -> LLVMValueRef
 	{
-		let mut constantCache = context.floatConstantCache.borrow_mut();
+		let mut constantCache = context.structConstantCache.borrow_mut();
 		
 		if let Some(extant) = constantCache.get(self)
 		{
@@ -23,7 +23,9 @@ impl Constant for FloatConstant
 		
 		let typeRef = context.typeRef(&self.llvmType);
 		
-		let value = unsafe { LLVMConstReal(typeRef, transmute(self.value)) };
+		let mut values: Vec<LLVMValueRef> = self.values.iter().map(|constant| constant.to_LLVMValueRef(context)).collect();
+		
+		let value = unsafe { LLVMConstNamedStruct(typeRef, values.as_mut_ptr(), values.len() as u32) };
 		
 		constantCache.insert(self.clone(), value);
 		
@@ -37,35 +39,22 @@ impl Constant for FloatConstant
 	}
 }
 
-impl FloatConstant
+impl StructConstant
 {
-	#[inline(always)]
-	pub fn constantFloat16BitUnsigned(value: u16) -> Self
+	pub fn new(name: Option<CString>, values: Vec<AnyConstant>, isPacked: bool) -> Self
 	{
 		Self
 		{
-			llvmType: LlvmType::Float16,
-			value: value as u64,
-		}
-	}
-	
-	#[inline(always)]
-	pub fn constantFloat32BitUnsigned(value: u32) -> Self
-	{
-		Self
-		{
-			llvmType: LlvmType::Float32,
-			value: value as u64,
-		}
-	}
-	
-	#[inline(always)]
-	pub fn constantFloat64BitUnsigned(value: u64) -> Self
-	{
-		Self
-		{
-			llvmType: LlvmType::Float64,
-			value: value,
+			llvmType: LlvmType::Struct
+			{
+				name: name,
+				body: StructBody
+				{
+					elements: values.iter().map(|constant| constant.llvmType().clone()).collect(),
+					isPacked: isPacked,
+				}
+			},
+			values: values,
 		}
 	}
 }

@@ -16,6 +16,7 @@ use ::std::collections::HashSet;
 use ::std::cell::RefCell;
 
 
+include!("AnyConstant.rs");
 include!("Attribute.rs");
 include!("BasicBlockBuilder.rs");
 include!("Builder.rs");
@@ -33,6 +34,8 @@ include!("IntegerConstant.rs");
 include!("LlvmType.rs");
 include!("LLVMTypeRefCache.rs");
 include!("ParameterAttribute.rs");
+include!("StructBody.rs");
+include!("StructConstant.rs");
 include!("SwitchInstruction.rs");
 include!("TargetDependentFunctionAttribute.rs");
 include!("TargetFeature.rs");
