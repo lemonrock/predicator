@@ -12,7 +12,7 @@ pub enum ParameterAttribute
 	byval,
 	inalloca,
 	sret,
-	align { n: u64 },
+	align { n: PowerOfTwoThirtyTwoBit },
 	noalias,
 	nocapture,
 	nest,
@@ -22,33 +22,58 @@ pub enum ParameterAttribute
 	dereferenceable_or_null { n: u64 },
 	swiftself,
 	swifterror,
+	
+	StringValueless(&'static [u8]),
+	StringValue(&'static [u8], &'static [u8]),
+	StringBoolean(&'static [u8], bool),
+	StringPowerOfTwo(&'static [u8], PowerOfTwoThirtyTwoBit),
 }
 
 impl Attribute for ParameterAttribute
 {
 	//noinspection SpellCheckingInspection
-	fn to_value(&self) -> (EnumAttributeName, u64)
+	fn to_attributeRef(&self, context: &Context) -> LLVMAttributeRef
 	{
 		use self::ParameterAttribute::*;
 		
 		match *self
 		{
-			zeroext => (EnumAttributeName::zeroext, 0),
-			signext => (EnumAttributeName::signext, 0),
-			inreg => (EnumAttributeName::inreg, 0),
-			byval => (EnumAttributeName::byval, 0),
-			inalloca => (EnumAttributeName::inalloca, 0),
-			sret => (EnumAttributeName::sret, 0),
-			align { n } => (EnumAttributeName::align, n),
-			noalias => (EnumAttributeName::noalias, 0),
-			nocapture => (EnumAttributeName::nocapture, 0),
-			nest => (EnumAttributeName::nest, 0),
-			returned => (EnumAttributeName::returned, 0),
-			nonnull => (EnumAttributeName::nonnull, 0),
-			dereferenceable { n } => (EnumAttributeName::dereferenceable, n),
-			dereferenceable_or_null { n } => (EnumAttributeName::dereferenceable_or_null, n),
-			swiftself => (EnumAttributeName::swiftself, 0),
-			swifterror => (EnumAttributeName::swifterror, 0),
+			zeroext => context.enumAttribute(EnumAttributeName::zeroext, 0),
+			signext => context.enumAttribute(EnumAttributeName::signext, 0),
+			inreg => context.enumAttribute(EnumAttributeName::inreg, 0),
+			byval => context.enumAttribute(EnumAttributeName::byval, 0),
+			inalloca => context.enumAttribute(EnumAttributeName::inalloca, 0),
+			sret => context.enumAttribute(EnumAttributeName::sret, 0),
+			align { n } => context.enumAttribute(EnumAttributeName::align, n.as_u32() as u64),
+			noalias => context.enumAttribute(EnumAttributeName::noalias, 0),
+			nocapture => context.enumAttribute(EnumAttributeName::nocapture, 0),
+			nest => context.enumAttribute(EnumAttributeName::nest, 0),
+			returned => context.enumAttribute(EnumAttributeName::returned, 0),
+			nonnull => context.enumAttribute(EnumAttributeName::nonnull, 0),
+			dereferenceable { n } => context.enumAttribute(EnumAttributeName::dereferenceable, n),
+			dereferenceable_or_null { n } => context.enumAttribute(EnumAttributeName::dereferenceable_or_null, n),
+			swiftself => context.enumAttribute(EnumAttributeName::swiftself, 0),
+			swifterror => context.enumAttribute(EnumAttributeName::swifterror, 0),
+			
+			StringValueless(name) => context.stringAttribute(name, None),
+			StringValue(name, value) => context.stringAttribute(name, Some(value)),
+			StringBoolean(name, boolean) =>
+			{
+				if boolean
+				{
+					context.stringAttribute(name, Some(b"true"))
+				}
+				else
+				{
+					context.stringAttribute(name, Some(b"false"))
+				}
+			}
+			StringPowerOfTwo(name, powerOfTwo) =>
+			{
+				let value = format!("{}", powerOfTwo.as_u32());
+				
+				context.stringAttribute(name, Some(value.as_bytes()))
+			},
 		}
 	}
 }

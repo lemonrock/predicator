@@ -31,7 +31,7 @@ codegen-units = 1
 cpp = "0.3"
 libc = "0.2"
 llvm-sys = "40.0.*"
-rust-extra = "0.0.13"
+rust-extra = "0.0.15"
 rand = "0.3"
 
 [build-dependencies]

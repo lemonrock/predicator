@@ -166,29 +166,54 @@ impl Context
 	#[inline(always)]
 	pub fn functionAttributeRef(&self, attribute: FunctionAttribute) -> LLVMAttributeRef
 	{
-		self.attributeRef(attribute, &mut self.functionAttributeCache.borrow_mut())
-	}
-	
-	#[inline(always)]
-	pub fn parameterAttributeRef(&self, attribute: ParameterAttribute) -> LLVMAttributeRef
-	{
-		self.attributeRef(attribute, &mut self.parameterAttributeCache.borrow_mut())
-	}
-	
-	#[inline(always)]
-	fn attributeRef<A: Attribute>(&self, attribute: A, cache: &mut HashMap<A, LLVMAttributeRef>) -> LLVMAttributeRef
-	{
+		let cache = &mut self.functionAttributeCache.borrow_mut();
+		
 		if let Some(attribute) = cache.get(&attribute)
 		{
 			return *attribute;
 		}
 		
-		let (enumAttributeName, value) = attribute.to_value();
-		let identifier = self.enumAttributeIdentifierCache.identifier(enumAttributeName);
-		let attributeRef = unsafe { LLVMCreateEnumAttribute(self.reference, identifier.0, value) };
+		let attributeRef = attribute.to_attributeRef(self);
 		
 		cache.insert(attribute, attributeRef);
 		
 		attributeRef
+	}
+	
+	#[inline(always)]
+	pub fn parameterAttributeRef(&self, attribute: ParameterAttribute) -> LLVMAttributeRef
+	{
+		let cache = &mut self.parameterAttributeCache.borrow_mut();
+		
+		if let Some(attribute) = cache.get(&attribute)
+		{
+			return *attribute;
+		}
+		
+		let attributeRef = attribute.to_attributeRef(self);
+		
+		cache.insert(attribute, attributeRef);
+		
+		attributeRef
+	}
+	
+	#[inline(always)]
+	pub(crate) fn enumAttribute(&self, enumAttributeName: EnumAttributeName, value: u64) -> LLVMAttributeRef
+	{
+		let identifier = self.enumAttributeIdentifierCache.identifier(enumAttributeName);
+		unsafe { LLVMCreateEnumAttribute(self.reference, identifier.0, value) }
+	}
+	
+	#[inline(always)]
+	pub(crate) fn stringAttribute(&self, name: &[u8], value: Option<&[u8]>) -> LLVMAttributeRef
+	{
+		if let Some(value) = value
+		{
+			unsafe { LLVMCreateStringAttribute(self.reference, name.as_ptr() as *const _, name.len() as u32, value.as_ptr() as *const _, value.len() as u32) }
+		}
+		else
+		{
+			unsafe { LLVMCreateStringAttribute(self.reference, name.as_ptr() as *const _, name.len() as u32, null(), 0) }
+		}
 	}
 }

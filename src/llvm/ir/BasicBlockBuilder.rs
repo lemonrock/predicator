@@ -59,8 +59,6 @@ impl<'a> BasicBlockBuilder<'a>
 		self.builder.unconditionalBranch(to.basicBlockReference);
 	}
 	
-	// We need some name management
-	
 	pub fn unconditionalBranchWithCreation(self, to: &str) -> BasicBlockBuilder<'a>
 	{
 		let to = self.newBasicBlock(to);

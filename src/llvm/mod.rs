@@ -34,6 +34,7 @@ use ::std::ffi::CString;
 use ::std::mem::uninitialized;
 use ::std::mem::size_of;
 use ::std::mem::zeroed;
+use ::std::ptr::null;
 use ::std::ptr::null_mut;
 use ::std::rc::Rc;
 

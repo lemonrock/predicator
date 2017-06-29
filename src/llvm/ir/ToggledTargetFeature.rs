@@ -2,7 +2,23 @@
 // Copyright © 2017 The developers of predicator. See the COPYRIGHT file in the top-level directory of this distribution and at https://raw.githubusercontent.com/lemonrock/predicator/master/COPYRIGHT.
 
 
-pub trait Attribute: Eq + Hash
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum ToggledTargetFeature
 {
-	fn to_attributeRef(&self, context: &Context) -> LLVMAttributeRef;
+	On(TargetFeature),
+	Off(TargetFeature),
+}
+
+impl ToggledTargetFeature
+{
+	pub fn value(&self) -> &str
+	{
+		use self::ToggledTargetFeature::*;
+		
+		match *self
+		{
+			On(ref feature) => feature.on(),
+			Off(ref feature) => feature.off(),
+		}
+	}
 }

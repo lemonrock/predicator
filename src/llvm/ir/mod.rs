@@ -4,6 +4,8 @@
 
 use super::*;
 use ::llvm_sys::*;
+use ::rust_extra::powersOfTwo::AsU32;
+use ::rust_extra::powersOfTwo::PowerOfTwoThirtyTwoBit;
 use ::std::cmp::Eq;
 use ::std::hash::Hash;
 use ::std::mem::transmute;
@@ -31,4 +33,6 @@ include!("LlvmType.rs");
 include!("LLVMTypeRefCache.rs");
 include!("ParameterAttribute.rs");
 include!("SwitchInstruction.rs");
+include!("TargetFeature.rs");
+include!("ToggledTargetFeature.rs");
 include!("UsefulCallingConvention.rs");
