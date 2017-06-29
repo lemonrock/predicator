@@ -54,6 +54,11 @@ impl<'a> BasicBlockBuilder<'a>
 		self.builder.returnValue(self.False());
 	}
 	
+	pub fn unconditionalBranch(self, to: &BasicBlockBuilder<'a>)
+	{
+		self.builder.unconditionalBranch(to.basicBlockReference);
+	}
+	
 	// We need some name management
 	
 	pub fn unconditionalBranchWithCreation(self, to: &str) -> BasicBlockBuilder<'a>
@@ -63,15 +68,36 @@ impl<'a> BasicBlockBuilder<'a>
 		to
 	}
 	
+	pub fn conditionalBranch(self, ifCondition: LLVMValueRef, thenBlock: &BasicBlockBuilder<'a>, elseBlock: &BasicBlockBuilder<'a>)
+	{
+		self.builder.conditionalBranch(ifCondition, thenBlock.basicBlockReference, elseBlock.basicBlockReference);
+	}
+	
+	/// integerValueOrConstant's integer type must match IntegerConstant but the API can't easily enforce this
+	pub fn switchBranch(self, integerValueOrConstant: LLVMValueRef, defaultBlock: &BasicBlockBuilder<'a>, caseBlocks: BTreeMap<IntegerConstant, BasicBlockBuilder<'a>>)
+	{
+		let switchInstruction = self.builder.switchBranch(integerValueOrConstant, defaultBlock.basicBlockReference, caseBlocks.len());
+		for (constant, caseBlock) in caseBlocks.iter()
+		{
+			switchInstruction.addCase(self.integerConstant(constant), caseBlock.basicBlockReference)
+		}
+	}
+	
 	#[inline(always)]
 	fn True(&self) -> LLVMValueRef
 	{
-		self.context.integerConstant(&IntegerConstant::True)
+		self.integerConstant(&IntegerConstant::True)
 	}
 	
 	#[inline(always)]
 	fn False(&self) -> LLVMValueRef
 	{
-		self.context.integerConstant(&IntegerConstant::False)
+		self.integerConstant(&IntegerConstant::False)
+	}
+	
+	#[inline(always)]
+	fn integerConstant(&self, constant: &IntegerConstant) -> LLVMValueRef
+	{
+		self.context.integerConstant(constant)
 	}
 }

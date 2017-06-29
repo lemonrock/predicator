@@ -37,4 +37,14 @@ impl Builder
 	{
 		Instruction(unsafe { LLVMBuildBr(self.reference, to) })
 	}
+	
+	fn conditionalBranch(&self, ifConditional: LLVMValueRef, thenBlock: LLVMBasicBlockRef, elseBlock: LLVMBasicBlockRef) -> Instruction
+	{
+		Instruction(unsafe { LLVMBuildCondBr(self.reference, ifConditional, thenBlock, elseBlock) })
+	}
+	
+	fn switchBranch(&self, integerValueOrConstant: LLVMValueRef, defaultBlock: LLVMBasicBlockRef, caseBlocks: usize) -> SwitchInstruction
+	{
+		SwitchInstruction(unsafe { LLVMBuildSwitch(self.reference, integerValueOrConstant, defaultBlock, caseBlocks as u32) })
+	}
 }
