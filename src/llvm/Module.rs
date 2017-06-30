@@ -72,8 +72,21 @@ impl Module
 		)
 	}
 	
-	pub fn addFunction<'a>(&self, context: &'a Context, functionDeclaration: FunctionDeclaration) -> FunctionBuilder<'a>
+	#[inline(always)]
+	pub fn addFunction<'a>(&self, context: &'a Context, functionDeclaration: &FunctionDeclaration) -> FunctionBuilder<'a>
 	{
 		functionDeclaration.create(context, self)
+	}
+	
+	#[inline(always)]
+	pub fn addField<'a>(&self, context: &'a Context, fieldDefinition: &FieldDefinition) -> LLVMValueRef
+	{
+		fieldDefinition.create(context, self)
+	}
+	
+	#[inline(always)]
+	pub fn dumpToStandardError(&self)
+	{
+		unsafe { LLVMDumpModule(self.reference) }
 	}
 }

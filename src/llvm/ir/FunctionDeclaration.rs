@@ -13,6 +13,13 @@ pub struct FunctionDeclaration
 	callingConvention: UsefulCallingConvention, // Ordinarily LLVMCallConv isn't usable
 	garbageCollectorStrategy: Option<CString>, // None
 	personalityFunctionReference: Option<LLVMValueRef>, // None
+	
+	linkage: UsefulLLVMLinkage,
+	visibility: UsefulLLVMVisibility,
+	section: Option<String>,
+	dllStorageClass: Option<UsefulLLVMDLLStorageClass>,
+	hasUnnamedAddress: bool,
+	alignment: Option<PowerOfTwoThirtyTwoBit>,
 }
 
 impl FunctionDeclaration
@@ -68,6 +75,13 @@ impl FunctionDeclaration
 			callingConvention: UsefulCallingConvention::C,
 			garbageCollectorStrategy: None,
 			personalityFunctionReference: None,
+			
+			linkage: UsefulLLVMLinkage::LLVMExternalLinkage,
+			visibility: UsefulLLVMVisibility::LLVMDefaultVisibility,
+			section: None,
+			dllStorageClass: None,
+			hasUnnamedAddress: false,
+			alignment: None,
 		}
 	}
 	
@@ -85,6 +99,13 @@ impl FunctionDeclaration
 			callingConvention: UsefulCallingConvention::Fast,
 			garbageCollectorStrategy: None,
 			personalityFunctionReference: None,
+			
+			linkage: UsefulLLVMLinkage::LLVMLinkerPrivateLinkage,
+			visibility: UsefulLLVMVisibility::LLVMDefaultVisibility,
+			section: None,
+			dllStorageClass: None,
+			hasUnnamedAddress: false,
+			alignment: None,
 		}
 	}
 	
@@ -137,6 +158,37 @@ impl FunctionDeclaration
 		if let Some(personalityFunctionReference) = self.personalityFunctionReference
 		{
 			unsafe { LLVMSetPersonalityFn(functionReference, personalityFunctionReference) };
+		}
+		
+		unsafe { LLVMSetLinkage(functionReference, self.linkage.to_LLVMLinkage()) };
+		
+		unsafe { LLVMSetVisibility(functionReference, self.visibility.to_LLVMVisibility()) };
+		
+		if let Some(section) = self.section.as_ref().map(String::as_str)
+		{
+			let cSection = CString::new(section).expect("section contains embedded NULLs");
+			unsafe { LLVMSetSection(functionReference, cSection.as_ptr()) };
+		}
+		
+		if let Some(ref dllStorageClass) = self.dllStorageClass
+		{
+			unsafe { LLVMSetDLLStorageClass(functionReference, dllStorageClass.to_LLVMDLLStorageClass()) };
+		}
+		
+		let HasUnnamedAddr = if self.hasUnnamedAddress
+		{
+			1
+		}
+		else
+		{
+			0
+		};
+		
+		unsafe { LLVMSetUnnamedAddr(functionReference, HasUnnamedAddr) };
+		
+		if let Some(alignment) = self.alignment
+		{
+			unsafe { LLVMSetAlignment(functionReference, alignment.as_u32()) };
 		}
 		
 		FunctionBuilder

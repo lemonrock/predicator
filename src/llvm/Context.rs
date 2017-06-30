@@ -85,23 +85,58 @@ impl Context
 		value
 	}
 	
+	pub fn functionAttributeRef(&self, attribute: FunctionAttribute) -> LLVMAttributeRef
+	{
+		let cache = &mut self.functionAttributeCache.borrow_mut();
+		
+		if let Some(attribute) = cache.get(&attribute)
+		{
+			return *attribute;
+		}
+		
+		let attributeRef = attribute.to_attributeRef(self);
+		
+		cache.insert(attribute, attributeRef);
+		
+		attributeRef
+	}
+	
+	pub fn parameterAttributeRef(&self, attribute: ParameterAttribute) -> LLVMAttributeRef
+	{
+		let cache = &mut self.parameterAttributeCache.borrow_mut();
+		
+		if let Some(attribute) = cache.get(&attribute)
+		{
+			return *attribute;
+		}
+		
+		let attributeRef = attribute.to_attributeRef(self);
+		
+		cache.insert(attribute, attributeRef);
+		
+		attributeRef
+	}
+	
+	#[inline(always)]
 	pub fn metadataKind_tbaa(&self) -> u32
 	{
 		self.metadataKind(b"tbaa")
 	}
 	
+	#[inline(always)]
 	pub fn metadataKind_tbaa_struct(&self) -> u32
 	{
 		self.metadataKind(b"tbaa.struct")
 	}
 	
+	#[inline(always)]
 	pub fn metadataKind(&self, name: &[u8]) -> u32
 	{
 		unsafe { LLVMGetMDKindIDInContext(self.reference, name.as_ptr() as *const _, name.len() as u32) }
 	}
 	
 	#[inline(always)]
-	pub fn createModule(&self, name: String) -> Result<Module, String>
+	pub fn createModule(&self, name: &str, dataLayout: &str, targetTriple: &str, inlineAssembler: Option<&str>) -> Result<Module, String>
 	{
 		let cName = CString::new(name).expect("name contains embedded NULs");
 		let reference = unsafe { LLVMModuleCreateWithNameInContext(cName.as_ptr(), self.reference) };
@@ -111,6 +146,22 @@ impl Context
 		}
 		else
 		{
+			// It is believed that the identifier is the same as the name
+			//let identifierBytes = identifier.as_bytes();
+			//unsafe { LLVMSetModuleIdentifier(reference, identifierBytes.as_ptr() as *const _, identifierBytes.len() as usize) };
+			
+			let cDataLayout = CString::new(dataLayout).expect("dataLayout contains embedded NULs");
+			unsafe { LLVMSetDataLayout(reference, cDataLayout.as_ptr()) };
+			
+			let cTargetTriple = CString::new(targetTriple).expect("targetTriple contains embedded NULs");
+			unsafe { LLVMSetTarget(reference, cTargetTriple.as_ptr()) };
+			
+			if let Some(inlineAssembler) = inlineAssembler
+			{
+				let cInlineAssembler = CString::new(inlineAssembler).expect("inlineAssembler contains embedded NULs");
+				unsafe { LLVMSetModuleInlineAsm(reference, cInlineAssembler.as_ptr()) };
+			}
+			
 			Ok
 			(
 				Module
@@ -217,40 +268,6 @@ impl Context
 	pub fn floatConstant(&self, constant: &FloatConstant) -> LLVMValueRef
 	{
 		constant.to_LLVMValueRef(self)
-	}
-	
-	#[inline(always)]
-	pub fn functionAttributeRef(&self, attribute: FunctionAttribute) -> LLVMAttributeRef
-	{
-		let cache = &mut self.functionAttributeCache.borrow_mut();
-		
-		if let Some(attribute) = cache.get(&attribute)
-		{
-			return *attribute;
-		}
-		
-		let attributeRef = attribute.to_attributeRef(self);
-		
-		cache.insert(attribute, attributeRef);
-		
-		attributeRef
-	}
-	
-	#[inline(always)]
-	pub fn parameterAttributeRef(&self, attribute: ParameterAttribute) -> LLVMAttributeRef
-	{
-		let cache = &mut self.parameterAttributeCache.borrow_mut();
-		
-		if let Some(attribute) = cache.get(&attribute)
-		{
-			return *attribute;
-		}
-		
-		let attributeRef = attribute.to_attributeRef(self);
-		
-		cache.insert(attribute, attributeRef);
-		
-		attributeRef
 	}
 	
 	#[inline(always)]
