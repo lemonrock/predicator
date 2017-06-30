@@ -2,12 +2,16 @@
 // Copyright © 2017 The developers of predicator. See the COPYRIGHT file in the top-level directory of this distribution and at https://raw.githubusercontent.com/lemonrock/predicator/master/COPYRIGHT.
 
 
-pub struct SwitchInstruction(LLVMValueRef);
-
-impl SwitchInstruction
+pub struct BuilderSwitchInstruction<'a>
 {
-	fn addCase(&self, integerConstant: LLVMValueRef, block: LLVMBasicBlockRef)
+	switchInstruction: LLVMValueRef,
+	context: &'a Context
+}
+
+impl<'a> BuilderSwitchInstruction<'a>
+{
+	fn addCase(&self, integerConstant: &IntegerConstant, block: LLVMBasicBlockRef)
 	{
-		unsafe { LLVMAddCase(self.0, integerConstant, block) };
+		unsafe { LLVMAddCase(self.switchInstruction, self.context.integerConstant(integerConstant), block) };
 	}
 }

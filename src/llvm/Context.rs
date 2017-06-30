@@ -14,6 +14,8 @@ pub struct Context
 	functionAttributeCache: RefCell<HashMap<FunctionAttribute, LLVMAttributeRef>>,
 	parameterAttributeCache: RefCell<HashMap<ParameterAttribute, LLVMAttributeRef>>,
 	enumAttributeIdentifierCache: EnumAttributeIdentifierCache,
+	metaDataStringsCache: RefCell<HashMap<String, LLVMValueRef>>,
+	tbaaNodeCache: RefCell<HashMap<TbaaNode, LLVMValueRef>>,
 }
 
 impl Context
@@ -28,22 +30,74 @@ impl Context
 		}
 		else
 		{
-			Ok
-			(
-				Self
-				{
-					reference: reference,
-					dropWrapper: Rc::new(ContextDropWrapper(reference)),
-					typeRefCache: RefCell::new(LLVMTypeRefCache::new()),
-					integerConstantCache: RefCell::new(HashMap::new()),
-					floatConstantCache: RefCell::new(HashMap::new()),
-					structConstantCache: RefCell::new(HashMap::new()),
-					functionAttributeCache: RefCell::new(HashMap::with_capacity(8)),
-					parameterAttributeCache: RefCell::new(HashMap::with_capacity(8)),
-					enumAttributeIdentifierCache: enumAttributeIdentifierCache,
-				}
-			)
+			let this = Self
+			{
+				reference: reference,
+				dropWrapper: Rc::new(ContextDropWrapper(reference)),
+				typeRefCache: RefCell::new(LLVMTypeRefCache::new()),
+				integerConstantCache: RefCell::new(HashMap::new()),
+				floatConstantCache: RefCell::new(HashMap::new()),
+				structConstantCache: RefCell::new(HashMap::new()),
+				functionAttributeCache: RefCell::new(HashMap::with_capacity(8)),
+				parameterAttributeCache: RefCell::new(HashMap::with_capacity(8)),
+				enumAttributeIdentifierCache: enumAttributeIdentifierCache,
+				metaDataStringsCache: RefCell::new(HashMap::new()),
+				tbaaNodeCache: RefCell::new(HashMap::new()),
+			};
+			
+			Ok(this)
 		}
+	}
+	
+	pub fn metadataString(&self, string: &str) -> LLVMValueRef
+	{
+		let mut cache = self.metaDataStringsCache.borrow_mut();
+		if let Some(value) = cache.get(string)
+		{
+			return *value;
+		}
+		
+		let owned = string.to_owned();
+		
+		let value =
+		{
+			let bytes = owned.as_bytes();
+			unsafe { LLVMMDStringInContext(self.reference, bytes.as_ptr() as *const _, bytes.len() as u32) }
+		};
+		
+		cache.insert(owned, value);
+		
+		value
+	}
+	
+	pub fn tbaaNode(&self, tbaaNode: &TbaaNode) -> LLVMValueRef
+	{
+		let mut cache = self.tbaaNodeCache.borrow_mut();
+		if let Some(value) = cache.get(tbaaNode)
+		{
+			return *value;
+		}
+		
+		let value = tbaaNode.to_LLVMValueRef(self);
+		
+		cache.insert(tbaaNode.clone(), value);
+		
+		value
+	}
+	
+	pub fn metadataKind_tbaa(&self) -> u32
+	{
+		self.metadataKind(b"tbaa")
+	}
+	
+	pub fn metadataKind_tbaa_struct(&self) -> u32
+	{
+		self.metadataKind(b"tbaa.struct")
+	}
+	
+	pub fn metadataKind(&self, name: &[u8]) -> u32
+	{
+		unsafe { LLVMGetMDKindIDInContext(self.reference, name.as_ptr() as *const _, name.len() as u32) }
 	}
 	
 	#[inline(always)]
@@ -136,14 +190,14 @@ impl Context
 	}
 	
 	#[inline(always)]
-	pub fn builder(&self) -> Builder
+	pub fn builder<'a>(&'a self) -> Builder<'a>
 	{
 		let reference = unsafe { LLVMCreateBuilderInContext(self.reference) };
 		
 		Builder
 		{
 			reference: reference,
-			parentDropWrapper: self.dropWrapper.clone(),
+			context: self,
 		}
 	}
 	

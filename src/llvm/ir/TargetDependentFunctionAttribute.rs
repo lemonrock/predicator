@@ -144,6 +144,10 @@ impl TargetDependentFunctionAttribute
 							{
 								features.push(',');
 							}
+							else
+							{
+								afterFirst = true;
+							}
 							features.push_str(toggledFeature.value());
 						}
 						

@@ -41,19 +41,20 @@ impl Constant for StructConstant
 
 impl StructConstant
 {
-	pub fn new(name: Option<CString>, values: Vec<AnyConstant>, isPacked: bool) -> Self
+	pub fn anonymous(isPacked: bool, values: Vec<AnyConstant>) -> Self
 	{
 		Self
 		{
-			llvmType: LlvmType::Struct
-			{
-				name: name,
-				body: StructBody
-				{
-					elements: values.iter().map(|constant| constant.llvmType().clone()).collect(),
-					isPacked: isPacked,
-				}
-			},
+			llvmType: LlvmType::anonymousStruct(isPacked, values.iter().map(|constant| constant.llvmType().clone()).collect()),
+			values: values,
+		}
+	}
+	
+	pub fn named(name: &str, isPacked: bool, values: Vec<AnyConstant>) -> Self
+	{
+		Self
+		{
+			llvmType: LlvmType::namedStruct(name, isPacked, values.iter().map(|constant| constant.llvmType().clone()).collect()),
 			values: values,
 		}
 	}

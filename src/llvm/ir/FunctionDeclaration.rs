@@ -12,7 +12,7 @@ pub struct FunctionDeclaration
 	targetDependentFunctionAttributes: HashSet<TargetDependentFunctionAttribute>,
 	callingConvention: UsefulCallingConvention, // Ordinarily LLVMCallConv isn't usable
 	garbageCollectorStrategy: Option<CString>, // None
-	personalityFunctionReference: Option<LLVMValue>, // None
+	personalityFunctionReference: Option<LLVMValueRef>, // None
 }
 
 impl FunctionDeclaration
@@ -89,31 +89,36 @@ impl FunctionDeclaration
 	}
 	
 	#[inline(always)]
-	pub(crate) fn create<'a>(mut self, context: &'a Context, module: &Module) -> FunctionBuilder<'a>
+	pub(crate) fn create<'a>(&self, context: &'a Context, module: &Module) -> FunctionBuilder<'a>
 	{
-		let functionType = context.typeRef(&LlvmType::Function { returns: Box::new(self.returns.0), parameters: self.parameters.iter().map(|ref functionParameter| functionParameter.0.clone() ).collect(), hasVarArgs: self.hasVarArgs });
+		let functionType = context.typeRef(&LlvmType::Function { returns: Box::new(self.returns.llvmType.clone()), parameters: self.parameters.iter().map(|ref functionParameter| functionParameter.llvmType.clone() ).collect(), hasVarArgs: self.hasVarArgs });
 		let functionReference = unsafe { LLVMAddFunction(module.reference, self.name.as_ptr(), functionType) };
 		
-		for attribute in self.returns.1.drain()
+		for attribute in self.returns.attributes.iter()
 		{
-			let attributeRef = context.parameterAttributeRef(attribute);
+			let attributeRef = context.parameterAttributeRef(*attribute);
 			unsafe { LLVMAddAttributeAtIndex(functionReference, LLVMAttributeReturnIndex, attributeRef) };
 		}
 		
 		let mut parameterIndex = 1u32;
-		for parameter in self.parameters.iter_mut()
+		for parameter in self.parameters.iter()
 		{
-			for attribute in parameter.1.drain()
+			if let Some(alignment) = parameter.alignment
 			{
-				let attributeRef = context.parameterAttributeRef(attribute);
+				unsafe { LLVMSetParamAlignment(LLVMGetParam(functionReference, parameterIndex - 1), alignment.as_u32()) }
+			}
+			
+			for attribute in parameter.attributes.iter()
+			{
+				let attributeRef = context.parameterAttributeRef(*attribute);
 				unsafe { LLVMAddAttributeAtIndex(functionReference, parameterIndex, attributeRef) };
 			}
 			parameterIndex += 1;
 		}
 		
-		for attribute in self.functionAttributes.drain()
+		for attribute in self.functionAttributes.iter()
 		{
-			let attributeRef = context.functionAttributeRef(attribute);
+			let attributeRef = context.functionAttributeRef(attribute.clone());
 			unsafe { LLVMAddAttributeAtIndex(functionReference, LLVMAttributeFunctionIndex, attributeRef) };
 		}
 		
@@ -129,15 +134,15 @@ impl FunctionDeclaration
 			unsafe { LLVMSetGC(functionReference, garbageCollectorStrategy.as_ptr()) };
 		}
 		
-		if let Some(ref mut personalityFunctionReference) = self.personalityFunctionReference
+		if let Some(personalityFunctionReference) = self.personalityFunctionReference
 		{
 			unsafe { LLVMSetPersonalityFn(functionReference, personalityFunctionReference) };
 		}
 		
 		FunctionBuilder
 		{
-			context: context,
-			functionReference: functionReference,
+			context,
+			functionReference,
 		}
 	}
 }

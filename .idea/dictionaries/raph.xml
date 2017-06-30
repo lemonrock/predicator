@@ -3,6 +3,7 @@
     <words>
       <w>appendv</w>
       <w>bindgen</w>
+      <w>bitcast</w>
       <w>chunksize</w>
       <w>cloexec</w>
       <w>conv</w>
@@ -81,6 +82,7 @@
       <w>sigs</w>
       <w>sockaddr</w>
       <w>strdup</w>
+      <w>tbaa</w>
       <w>timewait</w>
       <w>unextended</w>
       <w>unsubscribes</w>

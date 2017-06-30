@@ -2,10 +2,4 @@
 // Copyright © 2017 The developers of predicator. See the COPYRIGHT file in the top-level directory of this distribution and at https://raw.githubusercontent.com/lemonrock/predicator/master/COPYRIGHT.
 
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct FunctionParameter
-{
-	pub llvmType: LlvmType,
-	pub alignment: Option<PowerOfTwoThirtyTwoBit>,
-	pub attributes: HashSet<ParameterAttribute>,
-}
+pub struct Pointer(LLVMValueRef);

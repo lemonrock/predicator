@@ -2,4 +2,9 @@
 // Copyright © 2017 The developers of predicator. See the COPYRIGHT file in the top-level directory of this distribution and at https://raw.githubusercontent.com/lemonrock/predicator/master/COPYRIGHT.
 
 
-pub struct Instruction(LLVMValueRef);
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct TbaaNodeStructField
+{
+	kind: TbaaNode,
+	offset: u64,
+}
