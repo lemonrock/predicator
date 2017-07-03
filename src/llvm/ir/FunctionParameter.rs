@@ -9,3 +9,38 @@ pub struct FunctionParameter
 	pub alignment: Option<PowerOfTwoThirtyTwoBit>,
 	pub attributes: HashSet<ParameterAttribute>,
 }
+
+impl FunctionParameter
+{
+	pub fn boolean() -> Self
+	{
+		Self
+		{
+			llvmType: LlvmType::Int1,
+			alignment: None,
+			attributes: hashset!
+			{
+			},
+		}
+	}
+	
+	pub fn wrap(llvmType: &LlvmType, attributes: HashSet<ParameterAttribute>) -> Self
+	{
+		Self
+		{
+			llvmType: llvmType.clone(),
+			alignment: None,
+			attributes: attributes,
+		}
+	}
+	
+	pub fn pointer(llvmType: &LlvmType, attributes: HashSet<ParameterAttribute>) -> Self
+	{
+		Self
+		{
+			llvmType: LlvmType::pointer(llvmType.clone()),
+			alignment: None,
+			attributes:attributes,
+		}
+	}
+}

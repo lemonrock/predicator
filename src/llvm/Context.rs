@@ -7,15 +7,13 @@ pub struct Context
 {
 	reference: LLVMContextRef,
 	dropWrapper: Rc<ContextDropWrapper>,
-	typeRefCache: RefCell<LLVMTypeRefCache>,
-	pub(crate) integerConstantCache: RefCell<HashMap<IntegerConstant, LLVMValueRef>>,
-	pub(crate) floatConstantCache: RefCell<HashMap<FloatConstant, LLVMValueRef>>,
-	pub(crate) structConstantCache: RefCell<HashMap<StructConstant, LLVMValueRef>>,
+	typeRefCache: RefCell<HashMap<LlvmType, LLVMTypeRefWrapper>>,
+	constantCache: RefCell<HashMap<Constant, ConstantValue>>,
 	functionAttributeCache: RefCell<HashMap<FunctionAttribute, LLVMAttributeRef>>,
 	parameterAttributeCache: RefCell<HashMap<ParameterAttribute, LLVMAttributeRef>>,
 	enumAttributeIdentifierCache: EnumAttributeIdentifierCache,
-	metaDataStringsCache: RefCell<HashMap<String, LLVMValueRef>>,
-	tbaaNodeCache: RefCell<HashMap<TbaaNode, LLVMValueRef>>,
+	metaDataStringsCache: RefCell<HashMap<String, MetadataStringValue>>,
+	typeBasedAliasAnalysisNodeCache: RefCell<HashMap<TypeBasedAliasAnalysisNode, TypeBasedAliasAnalysisNodeValue>>,
 }
 
 impl Context
@@ -34,22 +32,76 @@ impl Context
 			{
 				reference: reference,
 				dropWrapper: Rc::new(ContextDropWrapper(reference)),
-				typeRefCache: RefCell::new(LLVMTypeRefCache::new()),
-				integerConstantCache: RefCell::new(HashMap::new()),
-				floatConstantCache: RefCell::new(HashMap::new()),
-				structConstantCache: RefCell::new(HashMap::new()),
+				typeRefCache: RefCell::new(HashMap::new()),
+				constantCache: RefCell::new(HashMap::new()),
 				functionAttributeCache: RefCell::new(HashMap::with_capacity(8)),
 				parameterAttributeCache: RefCell::new(HashMap::with_capacity(8)),
 				enumAttributeIdentifierCache: enumAttributeIdentifierCache,
 				metaDataStringsCache: RefCell::new(HashMap::new()),
-				tbaaNodeCache: RefCell::new(HashMap::new()),
+				typeBasedAliasAnalysisNodeCache: RefCell::new(HashMap::new()),
 			};
 			
 			Ok(this)
 		}
 	}
 	
-	pub fn metadataString(&self, string: &str) -> LLVMValueRef
+	#[inline(always)]
+	pub fn typeRef(&self, llvmType: &LlvmType) -> LLVMTypeRefWrapper
+	{
+		let mut typeRefCache = &mut self.typeRefCache.borrow_mut();
+		if let Some(extant) = typeRefCache.get(llvmType)
+		{
+			return *extant;
+		}
+		
+		let value = llvmType.toLLVMTypeRefWrapper(self);
+		
+		typeRefCache.insert(llvmType.clone(), value);
+		
+		value
+	}
+	
+	#[inline(always)]
+	pub fn constant(&self, constant: &Constant) -> ConstantValue
+	{
+		let mut constantCache = &mut self.constantCache.borrow_mut();
+		if let Some(extant) = constantCache.get(constant)
+		{
+			return *extant;
+		}
+		
+		let value = constant.toConstantValue(self);
+		
+		constantCache.insert(constant.clone(), value);
+		
+		value
+	}
+	
+	#[inline(always)]
+	pub fn enumAttribute(&self, enumAttributeName: EnumAttributeName, value: u64) -> LLVMAttributeRef
+	{
+		let identifier = self.enumAttributeIdentifierCache.identifier(enumAttributeName);
+		let reference = unsafe { LLVMCreateEnumAttribute(self.reference, identifier.0, value) };
+		debug_assert!(!reference.is_null(), "Enum Attribute Name '{:?}' is null", enumAttributeName);
+		reference
+	}
+	
+	#[inline(always)]
+	pub fn stringAttribute(&self, name: &[u8], value: Option<&[u8]>) -> LLVMAttributeRef
+	{
+		let reference = if let Some(value) = value
+		{
+			unsafe { LLVMCreateStringAttribute(self.reference, name.as_ptr() as *const _, name.len() as u32, value.as_ptr() as *const _, value.len() as u32) }
+		}
+		else
+		{
+			unsafe { LLVMCreateStringAttribute(self.reference, name.as_ptr() as *const _, name.len() as u32, null(), 0) }
+		};
+		debug_assert!(!reference.is_null(), "String Attribute is null");
+		reference
+	}
+	
+	pub fn metadataString(&self, string: &str) -> MetadataStringValue
 	{
 		let mut cache = self.metaDataStringsCache.borrow_mut();
 		if let Some(value) = cache.get(string)
@@ -62,7 +114,7 @@ impl Context
 		let value =
 		{
 			let bytes = owned.as_bytes();
-			unsafe { LLVMMDStringInContext(self.reference, bytes.as_ptr() as *const _, bytes.len() as u32) }
+			MetadataStringValue::fromLLVMValueRef(unsafe { LLVMMDStringInContext(self.reference, bytes.as_ptr() as *const _, bytes.len() as u32) })
 		};
 		
 		cache.insert(owned, value);
@@ -70,17 +122,17 @@ impl Context
 		value
 	}
 	
-	pub fn tbaaNode(&self, tbaaNode: &TbaaNode) -> LLVMValueRef
+	pub fn typeBasedAliasAnalysisNode(&self, typeBasedAliasAnalysisNode: &TypeBasedAliasAnalysisNode) -> TypeBasedAliasAnalysisNodeValue
 	{
-		let mut cache = self.tbaaNodeCache.borrow_mut();
-		if let Some(value) = cache.get(tbaaNode)
+		let mut cache = self.typeBasedAliasAnalysisNodeCache.borrow_mut();
+		if let Some(value) = cache.get(typeBasedAliasAnalysisNode)
 		{
 			return *value;
 		}
 		
-		let value = tbaaNode.to_LLVMValueRef(self);
+		let value = typeBasedAliasAnalysisNode.toTypeBasedAliasAnalysisNodeValue(self);
 		
-		cache.insert(tbaaNode.clone(), value);
+		cache.insert(typeBasedAliasAnalysisNode.clone(), value);
 		
 		value
 	}
@@ -249,44 +301,6 @@ impl Context
 		{
 			reference: reference,
 			context: self,
-		}
-	}
-	
-	#[inline(always)]
-	pub fn typeRef(&self, llvmType: &LlvmType) -> LLVMTypeRef
-	{
-		llvmType.to_LLVMTypeRef(self.reference, &mut self.typeRefCache.borrow_mut())
-	}
-	
-	#[inline(always)]
-	pub fn integerConstant(&self, constant: &IntegerConstant) -> LLVMValueRef
-	{
-		constant.to_LLVMValueRef(self)
-	}
-	
-	#[inline(always)]
-	pub fn floatConstant(&self, constant: &FloatConstant) -> LLVMValueRef
-	{
-		constant.to_LLVMValueRef(self)
-	}
-	
-	#[inline(always)]
-	pub(crate) fn enumAttribute(&self, enumAttributeName: EnumAttributeName, value: u64) -> LLVMAttributeRef
-	{
-		let identifier = self.enumAttributeIdentifierCache.identifier(enumAttributeName);
-		unsafe { LLVMCreateEnumAttribute(self.reference, identifier.0, value) }
-	}
-	
-	#[inline(always)]
-	pub(crate) fn stringAttribute(&self, name: &[u8], value: Option<&[u8]>) -> LLVMAttributeRef
-	{
-		if let Some(value) = value
-		{
-			unsafe { LLVMCreateStringAttribute(self.reference, name.as_ptr() as *const _, name.len() as u32, value.as_ptr() as *const _, value.len() as u32) }
-		}
-		else
-		{
-			unsafe { LLVMCreateStringAttribute(self.reference, name.as_ptr() as *const _, name.len() as u32, null(), 0) }
 		}
 	}
 }

@@ -7,6 +7,12 @@ include!("panic_on_false.rs");
 
 
 use self::ir::*;
+use self::ir::attributes::*;
+use self::ir::attributes::enums::*;
+use self::ir::constants::*;
+use self::ir::typeBasedAliasAnalysis::*;
+use self::ir::types::*;
+use self::ir::values::*;
 use self::machineCodeJit::*;
 use self::orcJit::*;
 use ::libc::c_char;
@@ -46,11 +52,11 @@ pub mod orcJit;
 
 include!("Context.rs");
 include!("ContextDropWrapper.rs");
-include!("initialiseOnceOnMainThread.rs");
 include!("JitContext.rs");
 include!("MemoryBuffer.rs");
 include!("MemoryBufferCreator.rs");
 include!("Module.rs");
 include!("ModuleDropWrapper.rs");
 include!("ModuleSourceCodeType.rs");
+include!("SuperContext.rs");
 include!("SymbolResolver.rs");

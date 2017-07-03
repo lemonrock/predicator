@@ -3,6 +3,7 @@
 
 
 use super::*;
+use self::useful::*;
 use ::llvm_sys::*;
 use ::rust_extra::powersOfTwo::AsU32;
 use ::rust_extra::powersOfTwo::PowerOfTwoThirtyTwoBit;
@@ -13,40 +14,23 @@ use ::std::ptr::null;
 use ::std::collections::BTreeMap;
 use ::std::collections::HashMap;
 use ::std::collections::HashSet;
-use ::std::cell::RefCell;
 
 
-include!("AnyConstant.rs");
-include!("Attribute.rs");
+pub mod attributes;
+pub mod constants;
+pub mod typeBasedAliasAnalysis;
+pub mod types;
+pub mod useful;
+pub mod values;
+
+
 include!("BasicBlockBuilder.rs");
 include!("Builder.rs");
 include!("BuilderSwitchInstruction.rs");
-include!("Constant.rs");
-include!("EnumAttributeIdentifier.rs");
-include!("EnumAttributeIdentifierCache.rs");
-include!("EnumAttributeName.rs");
 include!("FieldDefinition.rs");
 include!("FieldVariant.rs");
-include!("FloatConstant.rs");
-include!("FunctionAttribute.rs");
 include!("FunctionBuilder.rs");
 include!("FunctionDeclaration.rs");
 include!("FunctionParameter.rs");
-include!("IntegerConstant.rs");
 include!("LlvmType.rs");
-include!("LLVMTypeRefCache.rs");
 include!("ModuleDefinition.rs");
-include!("ParameterAttribute.rs");
-include!("Pointer.rs");
-include!("StructBody.rs");
-include!("StructConstant.rs");
-include!("TargetDependentFunctionAttribute.rs");
-include!("TargetFeature.rs");
-include!("TbaaNode.rs");
-include!("TbaaNodeStructField.rs");
-include!("ToggledTargetFeature.rs");
-include!("UsefulCallingConvention.rs");
-include!("UsefulLLVMDLLStorageClass.rs");
-include!("UsefulLLVMLinkage.rs");
-include!("UsefulLLVMThreadLocalMode.rs");
-include!("UsefulLLVMVisibility.rs");

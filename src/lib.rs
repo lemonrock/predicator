@@ -13,7 +13,7 @@ extern crate libc;
 extern crate llvm_sys;
 #[macro_use] extern crate maplit;
 extern crate rand;
-extern crate rust_extra;
+pub extern crate rust_extra;
 
 
 use ::libc::c_char;

@@ -2,9 +2,19 @@
 // Copyright © 2017 The developers of predicator. See the COPYRIGHT file in the top-level directory of this distribution and at https://raw.githubusercontent.com/lemonrock/predicator/master/COPYRIGHT.
 
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct StructBody
+pub struct PointerValue(LLVMValueRefWrapper);
+
+impl Value for PointerValue
 {
-	pub isPacked: bool,
-	pub elements: Vec<LlvmType>,
+	#[inline(always)]
+	fn fromLLVMValueRef(value: LLVMValueRef) -> Self
+	{
+		PointerValue(LLVMValueRefWrapper::fromLLVMValueRef(value))
+	}
+	
+	#[inline(always)]
+	fn asLLVMValueRef(&self) -> LLVMValueRef
+	{
+		self.0.asLLVMValueRef()
+	}
 }

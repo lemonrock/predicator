@@ -19,11 +19,11 @@ pub struct FieldDefinition
 
 impl FieldDefinition
 {
-	pub fn create(&self, context: &Context, module: &Module) -> LLVMValueRef
+	pub fn create(&self, context: &Context, module: &Module) -> GlobalValue
 	{
 		let cName = CString::new(self.name.clone()).expect("name contains embedded NULLs");
 		
-		let globalValue = unsafe { LLVMAddGlobalInAddressSpace(module.reference, context.typeRef(&self.llvmType), cName.as_ptr(), self.addressSpace) };
+		let globalValue = unsafe { LLVMAddGlobalInAddressSpace(module.reference, context.typeRef(&self.llvmType).asLLVMTypeRef(), cName.as_ptr(), self.addressSpace) };
 		
 		unsafe { LLVMSetLinkage(globalValue, self.linkage.to_LLVMLinkage()) };
 		
@@ -55,6 +55,8 @@ impl FieldDefinition
 		{
 			unsafe { LLVMSetAlignment(globalValue, alignment.as_u32()) };
 		}
+		
+		let globalValue = GlobalValue::fromLLVMValueRef(globalValue);
 		
 		self.fieldVariant.set(context, globalValue);
 		

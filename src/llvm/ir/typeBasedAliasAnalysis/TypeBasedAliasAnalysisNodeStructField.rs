@@ -2,11 +2,24 @@
 // Copyright © 2017 The developers of predicator. See the COPYRIGHT file in the top-level directory of this distribution and at https://raw.githubusercontent.com/lemonrock/predicator/master/COPYRIGHT.
 
 
-#[repr(u32)]
-#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum UsefulCallingConvention
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct TypeBasedAliasAnalysisNodeStructField
 {
-	C = 0,
-	Fast = 8,
-	Cold = 9,
+	kind: TypeBasedAliasAnalysisNode,
+	offset: u64,
+}
+
+impl TypeBasedAliasAnalysisNodeStructField
+{
+	#[inline(always)]
+	fn toTypeBasedAliasAnalysisNodeValue(&self, context: &Context) -> TypeBasedAliasAnalysisNodeValue
+	{
+		self.kind.toTypeBasedAliasAnalysisNodeValue(context)
+	}
+	
+	#[inline(always)]
+	fn toConstantValue(&self, context: &Context) -> ConstantValue
+	{
+		context.constant(&Constant::integer64BitUnsigned(self.offset))
+	}
 }

@@ -7,7 +7,7 @@
 pub enum FunctionAttribute
 {
 	alignstack {n: PowerOfTwoThirtyTwoBit},
-	allocsize { EltSizeParam: u64, NumEltsParam: Option<u64> },
+	//allocsize { EltSizeParam: u64, NumEltsParam: Option<u64> },   Don't know how to convert both values to one u64
 	alwaysinline,
 	builtin,
 	cold,
@@ -58,7 +58,7 @@ impl Attribute for FunctionAttribute
 		match *self
 		{
 			alignstack {n} => context.enumAttribute(EnumAttributeName::alignstack, n.as_u32() as u64),
-			allocsize { EltSizeParam, NumEltsParam } => context.enumAttribute(EnumAttributeName::allocsize, EltSizeParam as u64),
+			//allocsize { EltSizeParam, NumEltsParam } => context.enumAttribute(EnumAttributeName::allocsize, EltSizeParam as u64),
 			alwaysinline => context.enumAttribute(EnumAttributeName::alwaysinline, 0),
 			builtin => context.enumAttribute(EnumAttributeName::builtin, 0),
 			cold => context.enumAttribute(EnumAttributeName::cold, 0),

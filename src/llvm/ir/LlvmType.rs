@@ -23,7 +23,7 @@ pub enum LlvmType
 	Label,
 	MmxX86,
 	
-	Struct { name: Option<CString>, body: StructBody },
+	Struct { name: Option<CString>, isPacked: bool, elements: Vec<LlvmType> },
 	
 	Function { returns: Box<LlvmType>, parameters: Vec<LlvmType>, hasVarArgs: bool },
 	
@@ -37,42 +37,37 @@ pub enum LlvmType
 impl LlvmType
 {
 	#[inline(always)]
-	pub(crate) fn to_LLVMTypeRef(&self, C: LLVMContextRef, typeRefCache: &mut LLVMTypeRefCache) -> LLVMTypeRef
+	pub(crate) fn toLLVMTypeRefWrapper(&self, context: &Context) -> LLVMTypeRefWrapper
 	{
 		use self::LlvmType::*;
-		
-		if let Some(extant) = typeRefCache.get(self)
-		{
-			return *extant;
-		}
 		
 		let value = unsafe
 		{
 			match *self
 			{
-				Int1 => LLVMInt1TypeInContext(C),
-				Int8 => LLVMInt8TypeInContext(C),
-				Int16 => LLVMInt16TypeInContext(C),
-				Int32 => LLVMInt32TypeInContext(C),
-				Int64 => LLVMInt64TypeInContext(C),
-				Int128 => LLVMInt128TypeInContext(C),
+				Int1 => LLVMInt1TypeInContext(context.reference),
+				Int8 => LLVMInt8TypeInContext(context.reference),
+				Int16 => LLVMInt16TypeInContext(context.reference),
+				Int32 => LLVMInt32TypeInContext(context.reference),
+				Int64 => LLVMInt64TypeInContext(context.reference),
+				Int128 => LLVMInt128TypeInContext(context.reference),
 				
-				Float16 => LLVMHalfTypeInContext(C),
-				Float32 => LLVMFloatTypeInContext(C),
-				Float64 => LLVMDoubleTypeInContext(C),
-				Float128 => LLVMFP128TypeInContext(C),
-				Float80ForX86 => LLVMX86FP80TypeInContext(C),
-				Float128ForPowerPCLegacy => LLVMPPCFP128TypeInContext(C),
+				Float16 => LLVMHalfTypeInContext(context.reference),
+				Float32 => LLVMFloatTypeInContext(context.reference),
+				Float64 => LLVMDoubleTypeInContext(context.reference),
+				Float128 => LLVMFP128TypeInContext(context.reference),
+				Float80ForX86 => LLVMX86FP80TypeInContext(context.reference),
+				Float128ForPowerPCLegacy => LLVMPPCFP128TypeInContext(context.reference),
 				
-				Void => LLVMVoidTypeInContext(C),
-				Label => LLVMLabelTypeInContext(C),
-				MmxX86 => LLVMX86MMXTypeInContext(C),
+				Void => LLVMVoidTypeInContext(context.reference),
+				Label => LLVMLabelTypeInContext(context.reference),
+				MmxX86 => LLVMX86MMXTypeInContext(context.reference),
 				
-				Struct { ref name, ref body } =>
+				Struct { ref name, ref isPacked, ref elements } =>
 				{
-					let mut ElementTypes: Vec<LLVMTypeRef> = body.elements.iter().map(|llvmType| llvmType.to_LLVMTypeRef(C, typeRefCache)).collect();
+					let mut ElementTypes: Vec<LLVMTypeRef> = elements.iter().map(|llvmType| llvmType.toLLVMTypeRefWrapper(context).asLLVMTypeRef()).collect();
 					
-					let Packed = if body.isPacked
+					let Packed = if *isPacked
 					{
 						1
 					}
@@ -83,11 +78,11 @@ impl LlvmType
 					
 					match name
 					{
-						&None => LLVMStructTypeInContext(C, ElementTypes.as_mut_ptr(), ElementTypes.len() as c_uint, Packed),
+						&None => LLVMStructTypeInContext(context.reference, ElementTypes.as_mut_ptr(), ElementTypes.len() as c_uint, Packed),
 						
 						&Some(ref name) =>
 						{
-							let StructTy = LLVMStructCreateNamed(C, name.as_ptr());
+							let StructTy = LLVMStructCreateNamed(context.reference, name.as_ptr());
 							LLVMStructSetBody(StructTy, ElementTypes.as_mut_ptr(), ElementTypes.len() as c_uint, Packed);
 							StructTy
 						}
@@ -97,9 +92,9 @@ impl LlvmType
 				
 				Function { ref returns, ref parameters, hasVarArgs } =>
 				{
-					let ReturnType = returns.to_LLVMTypeRef(C, typeRefCache);
+					let ReturnType = returns.toLLVMTypeRefWrapper(context).asLLVMTypeRef();
 					
-					let mut ParamTypes: Vec<LLVMTypeRef> = parameters.iter().map(|llvmType| llvmType.to_LLVMTypeRef(C, typeRefCache)).collect();
+					let mut ParamTypes: Vec<LLVMTypeRef> = parameters.iter().map(|llvmType| llvmType.toLLVMTypeRefWrapper(context).asLLVMTypeRef()).collect();
 					
 					let IsVarArg = if hasVarArgs
 					{
@@ -113,17 +108,15 @@ impl LlvmType
 					LLVMFunctionType(ReturnType, ParamTypes.as_mut_ptr(), ParamTypes.len() as c_uint, IsVarArg)
 				},
 				
-				Array { ref elementType, ref numberOfElements } => LLVMArrayType(elementType.to_LLVMTypeRef(C, typeRefCache), *numberOfElements),
+				Array { ref elementType, ref numberOfElements } => LLVMArrayType(elementType.toLLVMTypeRefWrapper(context).asLLVMTypeRef(), *numberOfElements),
 				
-				Vector { ref elementType, ref numberOfElements } => LLVMVectorType(elementType.to_LLVMTypeRef(C, typeRefCache), *numberOfElements),
+				Vector { ref elementType, ref numberOfElements } => LLVMVectorType(elementType.toLLVMTypeRefWrapper(context).asLLVMTypeRef(), *numberOfElements),
 				
-				Pointer { ref elementType, ref addressSpace } => LLVMPointerType(elementType.to_LLVMTypeRef(C, typeRefCache), *addressSpace),
+				Pointer { ref elementType, ref addressSpace } => LLVMPointerType(elementType.toLLVMTypeRefWrapper(context).asLLVMTypeRef(), *addressSpace),
 			}
 		};
 		
-		typeRefCache.insert(self.clone(), value);
-		
-		value
+		LLVMTypeRefWrapper(value)
 	}
 	
 	pub fn anonymousStruct(isPacked: bool, elements: Vec<LlvmType>) -> Self
@@ -131,11 +124,8 @@ impl LlvmType
 		LlvmType::Struct
 		{
 			name: None,
-			body: StructBody
-			{
-				isPacked,
-				elements,
-			}
+			isPacked: isPacked,
+			elements: elements,
 		}
 	}
 	
@@ -144,11 +134,8 @@ impl LlvmType
 		LlvmType::Struct
 		{
 			name: Some(CString::new(name).unwrap()),
-			body: StructBody
-			{
-				isPacked,
-				elements,
-			}
+			isPacked: isPacked,
+			elements: elements,
 		}
 	}
 	

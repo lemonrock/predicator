@@ -5,32 +5,32 @@
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum FieldVariant
 {
-	Constant(AnyConstant),
+	Constant(Constant),
 	
-	Value(UsefulLLVMThreadLocalMode, Option<AnyConstant>),
+	Value(UsefulLLVMThreadLocalMode, Option<Constant>),
 }
 
 impl FieldVariant
 {
-	fn set(&self, context: &Context, globalValue: LLVMValueRef)
+	fn set(&self, context: &Context, globalValue: GlobalValue)
 	{
-		use self::FieldVariant::*;
+		let globalValue = globalValue.asLLVMValueRef();
 		
 		match *self
 		{
-			Constant(ref constant) =>
+			FieldVariant::Constant(ref constant) =>
 			{
 				unsafe { LLVMSetGlobalConstant(globalValue, 1) };
-				unsafe { LLVMSetInitializer(globalValue, constant.to_LLVMValueRef(context)) };
+				unsafe { LLVMSetInitializer(globalValue, constant.toConstantValue(context).asLLVMValueRef()) };
 			}
 			
-			Value(ref threadLocalMode, ref constant) =>
+			FieldVariant::Value(ref threadLocalMode, ref constant) =>
 			{
 				unsafe { LLVMSetGlobalConstant(globalValue, 0) };
 				
 				if let &Some(ref constant) = constant
 				{
-					unsafe { LLVMSetInitializer(globalValue, constant.to_LLVMValueRef(context)) };
+					unsafe { LLVMSetInitializer(globalValue, constant.toConstantValue(context).asLLVMValueRef()) };
 				}
 				else
 				{

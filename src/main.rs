@@ -7,7 +7,6 @@ extern crate predicator;
 
 use ::predicator::compiler::*;
 use ::predicator::llvm::*;
-use ::predicator::llvm::ir::*;
 
 
 fn main()
@@ -16,11 +15,11 @@ fn main()
 	let mut rust_plugin_compiler = RustPluginCompiler::new(TemporaryFolderPath::TempDir);
 	let plugin_bit_code_file_path = rust_plugin_compiler.example().expect("Did not compile plugin");
 	
-	// Initialise LLVM functionality
-	initialiseOnceOnMainThread();
+	// Create a super context
+	let super_context = SuperContext::default();
 	
 	// There needs to be at least one context per thread
-	let jit_context = JitContext::new(NaiveSymbolResolver(0), EnumAttributeIdentifierCache::default()).expect("Could not create a new JIT context");
+	let jit_context = super_context.newJitContext(NaiveSymbolResolver(0)).expect("Could not create a new JIT context");
 	
 	// Can also be created from a slice, and from intermediate representation (.ll files)
 	let plugins = jit_context.loadPlugins(ModuleSourceCodeType::BitCode, &MemoryBufferCreator::File(&plugin_bit_code_file_path)).expect("Could not load plugin");

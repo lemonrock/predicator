@@ -23,31 +23,31 @@ impl<'a> Builder<'a>
 		unsafe { LLVMPositionBuilderAtEnd(self.reference, basicBlockReference) }
 	}
 	
-	fn returnVoid(&self) -> LLVMValueRef
+	pub fn returnVoid(&self) -> TerminatorValue
 	{
-		unsafe { LLVMBuildRetVoid(self.reference) }
+		TerminatorValue::fromLLVMValueRef(unsafe { LLVMBuildRetVoid(self.reference) })
 	}
 	
-	fn returnValue(&self, value: &IntegerConstant) -> LLVMValueRef
+	pub fn returnValue(&self, value: &Constant) -> TerminatorValue
 	{
-		unsafe { LLVMBuildRet(self.reference, self.context.integerConstant(value)) }
+		TerminatorValue::fromLLVMValueRef(unsafe { LLVMBuildRet(self.reference, self.context.constant(value).asLLVMValueRef()) })
 	}
 	
-	fn unconditionalBranch(&self, to: LLVMBasicBlockRef) -> LLVMValueRef
+	fn unconditionalBranch(&self, to: LLVMBasicBlockRef) -> TerminatorValue
 	{
-		unsafe { LLVMBuildBr(self.reference, to) }
+		TerminatorValue::fromLLVMValueRef(unsafe { LLVMBuildBr(self.reference, to) })
 	}
 	
-	fn conditionalBranch(&self, ifConditional: LLVMValueRef, thenBlock: LLVMBasicBlockRef, elseBlock: LLVMBasicBlockRef) -> LLVMValueRef
+	fn conditionalBranch(&self, ifConditional: LLVMValueRef, thenBlock: LLVMBasicBlockRef, elseBlock: LLVMBasicBlockRef) -> TerminatorValue
 	{
-		unsafe { LLVMBuildCondBr(self.reference, ifConditional, thenBlock, elseBlock) }
+		TerminatorValue::fromLLVMValueRef(unsafe { LLVMBuildCondBr(self.reference, ifConditional, thenBlock, elseBlock) })
 	}
 	
 	fn switchBranch(&self, integerValueOrConstant: LLVMValueRef, defaultBlock: LLVMBasicBlockRef, caseBlocks: usize) -> BuilderSwitchInstruction<'a>
 	{
 		BuilderSwitchInstruction
 		{
-			switchInstruction: unsafe { LLVMBuildSwitch(self.reference, integerValueOrConstant, defaultBlock, caseBlocks as u32) },
+			switchInstruction: TerminatorValue::fromLLVMValueRef(unsafe { LLVMBuildSwitch(self.reference, integerValueOrConstant, defaultBlock, caseBlocks as u32) }),
 			context: self.context,
 		}
 	}
@@ -66,48 +66,67 @@ impl<'a> Builder<'a>
 		LLVM treats pointers to structs as if they were arrays
 		
 	*/
-	fn getElementPointer_PointerToStructToPointerToField(&self, arrayPointer: Pointer, arrayIndex: u64, fieldIndex: u32) -> Pointer
+	fn getElementPointer_PointerToStructToPointerToField(&self, arrayPointer: PointerValue, arrayIndex: u64, fieldIndex: u32) -> PointerValue
+	{
+		let mut indices = Vec::with_capacity(2);
+		indices.push(self.context.constant(&Constant::integer64BitUnsigned(arrayIndex)).asLLVMValueRef());
+		indices.push(self.context.constant(&Constant::integer32BitUnsigned(fieldIndex)).asLLVMValueRef());
+		
+//		let mut indices: [LLVMValueRef; 2] =
+//		[
+//			self.context.constant(&Constant::integer64BitUnsigned(arrayIndex)),
+//			self.context.constant(&Constant::integer32BitUnsigned(fieldIndex)),
+//		];
+		
+		println!("HELLO xxx");
+		println!("HMMM {:?}", self.reference);
+		println!("HMMM2 {:?}", indices[0]);
+		println!("HMMM3 {:?}", indices[1]);
+		
+		let x = CString::new("Hello").unwrap();
+		println!("HMMM3 {:?}", x);
+		println!("HMMM3 {:?}", arrayPointer.asLLVMValueRef());
+		
+		
+		let x = unsafe { LLVMBuildInBoundsGEP(self.reference, arrayPointer.asLLVMValueRef(), indices.as_mut_ptr(), indices.len() as u32, x.as_ptr()) };
+		
+		println!("HELLO yyy");
+		let z = PointerValue::fromLLVMValueRef(x);
+		
+		z
+	}
+	
+	fn getElementPointer_ArrayIndex(&self, arrayPointer: PointerValue, arrayIndex: u64) -> PointerValue
 	{
 		let mut indices =
 		[
-			self.context.integerConstant(&IntegerConstant::constantInteger64BitUnsigned(arrayIndex)),
-			self.context.integerConstant(&IntegerConstant::constantInteger32BitUnsigned(fieldIndex)),
+			self.context.constant(&Constant::integer64BitUnsigned(arrayIndex)).asLLVMValueRef(),
 		];
 		
-		Pointer(unsafe { LLVMBuildInBoundsGEP(self.reference, arrayPointer.0, indices.as_mut_ptr(), indices.len() as u32, Self::EmptyName()) })
+		PointerValue::fromLLVMValueRef(unsafe { LLVMBuildInBoundsGEP(self.reference, arrayPointer.asLLVMValueRef(), indices.as_mut_ptr(), indices.len() as u32, Self::EmptyName()) })
 	}
 	
-	fn getElementPointer_ArrayIndex(&self, arrayPointer: Pointer, arrayIndex: u64) -> Pointer
+	fn load(&self, pointerValue: PointerValue, alignment: Option<PowerOfTwoThirtyTwoBit>, typeBasedAliasAnalysisNode: Option<TypeBasedAliasAnalysisNode>) -> LLVMValueRefWrapper
 	{
-		let mut indices =
-		[
-			self.context.integerConstant(&IntegerConstant::constantInteger64BitUnsigned(arrayIndex)),
-		];
-		
-		Pointer(unsafe { LLVMBuildInBoundsGEP(self.reference, arrayPointer.0, indices.as_mut_ptr(), indices.len() as u32, Self::EmptyName()) })
-	}
-	
-	fn load(&self, pointerValue: Pointer, alignment: Option<PowerOfTwoThirtyTwoBit>, tbaaNode: Option<TbaaNode>) -> LLVMValueRef
-	{
-		let instruction = unsafe { LLVMBuildLoad(self.reference, pointerValue.0, Self::EmptyName()) };
+		let instruction = unsafe { LLVMBuildLoad(self.reference, pointerValue.asLLVMValueRef(), Self::EmptyName()) };
 		
 		if let Some(alignment) = alignment
 		{
 			unsafe { LLVMSetAlignment(instruction, alignment.as_u32()) };
 		}
 		
-		if let Some(ref tbaaNode) = tbaaNode
+		if let Some(ref typeBasedAliasAnalysisNode) = typeBasedAliasAnalysisNode
 		{
-			unsafe { LLVMSetMetadata(instruction, self.context.metadataKind_tbaa(), self.context.tbaaNode(tbaaNode)) };
+			unsafe { LLVMSetMetadata(instruction, self.context.metadataKind_tbaa(), self.context.typeBasedAliasAnalysisNode(typeBasedAliasAnalysisNode).asLLVMValueRef()) };
 		}
 		
-		instruction
+		LLVMValueRefWrapper(instruction)
 	}
 	
-	fn bitcastPointerToUnsignedCharPointer(&self, pointerValue: Pointer) -> Pointer
+	fn bitcastPointerToUnsignedCharPointer(&self, pointerValue: PointerValue) -> PointerValue
 	{
 		let unsignedCharPointer = LlvmType::pointer(LlvmType::Int8);
-		Pointer(unsafe { LLVMBuildBitCast(self.reference, pointerValue.0, self.context.typeRef(&unsignedCharPointer), Self::EmptyName()) })
+		PointerValue::fromLLVMValueRef(unsafe { LLVMBuildBitCast(self.reference, pointerValue.asLLVMValueRef(), self.context.typeRef(&unsignedCharPointer).asLLVMTypeRef(), Self::EmptyName()) })
 	}
 	
 	#[inline(always)]

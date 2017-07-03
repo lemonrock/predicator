@@ -146,13 +146,14 @@ use ::predicator::llvm::*;
 
 fn main()
 {
-	JitContext::initialiseOnceOnMainThread();
+	// Create a super context
+	let super_context = SuperContext::default();
 	
 	// There needs to be at least one context per thread
-	let jitContext = JitContext::new().expect("Could not create a new JIT context");
+	let jit_context = super_context.newJitContext(NaiveSymbolResolver(0)).expect("Could not create a new JIT context");
 	
 	// Can also be created from a slice, and from intermediate representation (.ll files)
-	let plugins = jitContext.loadPlugins(ModuleSourceCodeType::BitCode, &MemoryBufferCreator::File("/path/to/bitcode/file.bc")).expect("Could not parse bit code into module");
+	let plugins = jit_context.loadPlugins(ModuleSourceCodeType::BitCode, &MemoryBufferCreator::File("/path/to/bitcode/file.bc")).expect("Could not parse bit code into module");
 	
 	// Note that there is no way to know the correct arity or arguments for the function pointer
 	let simple_plugin_function_pointer = plugins.nullaryFunctionPointer::<()>("simple_plugin").expect("Missing function for simple_plugin");

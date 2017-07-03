@@ -5,7 +5,7 @@
 pub struct FunctionBuilder<'a>
 {
 	context: &'a Context,
-	functionReference: LLVMValueRef,
+	functionValue: FunctionValue,
 }
 
 impl<'a> FunctionBuilder<'a>
@@ -13,6 +13,6 @@ impl<'a> FunctionBuilder<'a>
 	#[inline(always)]
 	pub fn withFirstBasicBlock(self, name: &str) -> BasicBlockBuilder<'a>
 	{
-		BasicBlockBuilder::createBasicBlock(name, self.context, self.functionReference)
+		BasicBlockBuilder::createBasicBlock(name, self.context, self.functionValue)
 	}
 }

@@ -79,7 +79,7 @@ impl Module
 	}
 	
 	#[inline(always)]
-	pub fn addField<'a>(&self, context: &'a Context, fieldDefinition: &FieldDefinition) -> LLVMValueRef
+	pub fn addField<'a>(&self, context: &'a Context, fieldDefinition: &FieldDefinition) -> GlobalValue
 	{
 		fieldDefinition.create(context, self)
 	}

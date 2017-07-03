@@ -10,7 +10,7 @@ pub struct FunctionDeclaration
 	hasVarArgs: bool,
 	functionAttributes: HashSet<FunctionAttribute>,
 	targetDependentFunctionAttributes: HashSet<TargetDependentFunctionAttribute>,
-	callingConvention: UsefulCallingConvention, // Ordinarily LLVMCallConv isn't usable
+	callingConvention: UsefulLLVMCallConv,
 	garbageCollectorStrategy: Option<CString>, // None
 	personalityFunctionReference: Option<LLVMValueRef>, // None
 	
@@ -25,14 +25,13 @@ pub struct FunctionDeclaration
 impl FunctionDeclaration
 {
 	#[inline(always)]
-	pub fn publicReadOnly(&self, name: &str, returns: FunctionParameter, parameters: Vec<FunctionParameter>) -> Self
+	pub fn public(name: &str, returns: FunctionParameter, parameters: Vec<FunctionParameter>) -> Self
 	{
 		use self::FunctionAttribute::*;
 		
 		let functionAttributes = hashset!
 		{
 			norecurse,
-			readonly,
 			
 			nounwind,
 			uwtable,
@@ -72,7 +71,7 @@ impl FunctionDeclaration
 			hasVarArgs: false,
 			functionAttributes: functionAttributes,
 			targetDependentFunctionAttributes: targetDependentFunctionAttributes,
-			callingConvention: UsefulCallingConvention::C,
+			callingConvention: UsefulLLVMCallConv::LLVMCCallConv,
 			garbageCollectorStrategy: None,
 			personalityFunctionReference: None,
 			
@@ -86,7 +85,7 @@ impl FunctionDeclaration
 	}
 	
 	#[inline(always)]
-	pub fn private(&self, name: &str, returns: FunctionParameter, parameters: Vec<FunctionParameter>, functionAttributes: HashSet<FunctionAttribute>, targetDependentFunctionAttributes: HashSet<TargetDependentFunctionAttribute>) -> Self
+	pub fn private(name: &str, returns: FunctionParameter, parameters: Vec<FunctionParameter>, functionAttributes: HashSet<FunctionAttribute>, targetDependentFunctionAttributes: HashSet<TargetDependentFunctionAttribute>) -> Self
 	{
 		Self
 		{
@@ -96,7 +95,7 @@ impl FunctionDeclaration
 			hasVarArgs: false,
 			functionAttributes: functionAttributes,
 			targetDependentFunctionAttributes: targetDependentFunctionAttributes,
-			callingConvention: UsefulCallingConvention::Fast,
+			callingConvention: UsefulLLVMCallConv::LLVMFastCallConv,
 			garbageCollectorStrategy: None,
 			personalityFunctionReference: None,
 			
@@ -112,8 +111,10 @@ impl FunctionDeclaration
 	#[inline(always)]
 	pub(crate) fn create<'a>(&self, context: &'a Context, module: &Module) -> FunctionBuilder<'a>
 	{
-		let functionType = context.typeRef(&LlvmType::Function { returns: Box::new(self.returns.llvmType.clone()), parameters: self.parameters.iter().map(|ref functionParameter| functionParameter.llvmType.clone() ).collect(), hasVarArgs: self.hasVarArgs });
+		let functionType = context.typeRef(&LlvmType::Function { returns: Box::new(self.returns.llvmType.clone()), parameters: self.parameters.iter().map(|ref functionParameter| functionParameter.llvmType.clone() ).collect(), hasVarArgs: self.hasVarArgs }).asLLVMTypeRef();
 		let functionReference = unsafe { LLVMAddFunction(module.reference, self.name.as_ptr(), functionType) };
+		
+		let functionValue = FunctionValue::fromLLVMValueRef(functionReference);
 		
 		for attribute in self.returns.attributes.iter()
 		{
@@ -145,7 +146,7 @@ impl FunctionDeclaration
 		
 		for attribute in self.targetDependentFunctionAttributes.iter()
 		{
-			attribute.addToFunction(functionReference);
+			attribute.addToFunction(functionValue);
 		}
 		
 		unsafe { LLVMSetFunctionCallConv(functionReference, self.callingConvention as u32) };
@@ -194,7 +195,7 @@ impl FunctionDeclaration
 		FunctionBuilder
 		{
 			context,
-			functionReference,
+			functionValue,
 		}
 	}
 }

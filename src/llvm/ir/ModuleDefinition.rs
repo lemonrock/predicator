@@ -14,11 +14,11 @@ pub struct ModuleDefinition
 
 impl ModuleDefinition
 {
-	pub fn newForAmd64Musl(name: String, fieldDefinitions: Vec<FieldDefinition>) -> Self
+	pub fn newForAmd64Musl<S: Into<String>>(name: S, fieldDefinitions: Vec<FieldDefinition>) -> Self
 	{
 		Self
 		{
-			name: name,
+			name: name.into(),
 			targetDataLayout: "e-m:e-i64:64-f80:128-n8:16:32:64-S128",
 			targetTriple: "x86_64-pc-linux-musl",
 			inlineAssembler: None,
@@ -26,8 +26,8 @@ impl ModuleDefinition
 		}
 	}
 	
-	#[inline(alway)]
-	pub fn create(&self, context: &Context) -> Result<(Module, HashMap<String, LLVMValueRef>), String>
+	#[inline(always)]
+	pub fn create(&self, context: &Context) -> Result<(Module, HashMap<String, GlobalValue>), String>
 	{
 		let module = context.createModule(&self.name, self.targetDataLayout, self.targetTriple, self.inlineAssembler.as_ref().map(String::as_str))?;
 		

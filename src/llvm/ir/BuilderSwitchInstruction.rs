@@ -4,14 +4,14 @@
 
 pub struct BuilderSwitchInstruction<'a>
 {
-	switchInstruction: LLVMValueRef,
+	switchInstruction: TerminatorValue,
 	context: &'a Context
 }
 
 impl<'a> BuilderSwitchInstruction<'a>
 {
-	fn addCase(&self, integerConstant: &IntegerConstant, block: LLVMBasicBlockRef)
+	fn addCase(&self, integerConstant: u8, block: LLVMBasicBlockRef)
 	{
-		unsafe { LLVMAddCase(self.switchInstruction, self.context.integerConstant(integerConstant), block) };
+		unsafe { LLVMAddCase(self.switchInstruction.asLLVMValueRef(), self.context.constant(&Constant::integer8BitUnsigned(integerConstant)).asLLVMValueRef(), block) };
 	}
 }

@@ -101,9 +101,11 @@ impl TargetDependentFunctionAttribute
 		TargetDependentFunctionAttribute::StringFeatures(b"target-features\0", features)
 	}
 	
-	fn addToFunction(&self, functionReference: LLVMValueRef)
+	pub(crate) fn addToFunction(&self, functionValue: FunctionValue)
 	{
 		use self::TargetDependentFunctionAttribute::*;
+		
+		let functionReference = functionValue.asLLVMValueRef();
 		
 		unsafe
 		{
@@ -114,47 +116,47 @@ impl TargetDependentFunctionAttribute
 				StringValue(name, value) => LLVMAddTargetDependentFunctionAttr(functionReference, name.as_ptr() as *const _, value.as_ptr() as *const _),
 				
 				StringBoolean(name, boolean) =>
+				{
+					if boolean
 					{
-						if boolean
+						LLVMAddTargetDependentFunctionAttr(functionReference, name.as_ptr() as *const _, b"true\0".as_ptr() as *const _)
+					}
+					else
+					{
+						LLVMAddTargetDependentFunctionAttr(functionReference, name.as_ptr() as *const _, b"false\0".as_ptr() as *const _)
+					}
+				}
+				
+				StringPowerOfTwo(name, powerOfTwo) =>
+				{
+					let value = format!("{}", powerOfTwo.as_u32());
+					
+					let bytes = value.as_bytes();
+					
+					LLVMAddTargetDependentFunctionAttr(functionReference, name.as_ptr() as *const _, bytes.as_ptr() as *const _)
+				}
+				
+				StringFeatures(name, ref toggledFeatures) =>
+				{
+					let mut features = String::with_capacity(32);
+					let mut afterFirst = false;
+					for toggledFeature in toggledFeatures.iter()
+					{
+						if afterFirst
 						{
-							LLVMAddTargetDependentFunctionAttr(functionReference, name.as_ptr() as *const _, b"true\0".as_ptr() as *const _)
+							features.push(',');
 						}
 						else
 						{
-							LLVMAddTargetDependentFunctionAttr(functionReference, name.as_ptr() as *const _, b"false\0".as_ptr() as *const _)
+							afterFirst = true;
 						}
+						features.push_str(toggledFeature.value());
 					}
-				
-				StringPowerOfTwo(name, powerOfTwo) =>
-					{
-						let value = format!("{}", powerOfTwo.as_u32());
-						
-						let bytes = value.as_bytes();
-						
-						LLVMAddTargetDependentFunctionAttr(functionReference, name.as_ptr() as *const _, bytes.as_ptr() as *const _)
-					}
-				
-				StringFeatures(name, ref toggledFeatures) =>
-					{
-						let mut features = String::with_capacity(32);
-						let mut afterFirst = false;
-						for toggledFeature in toggledFeatures.iter()
-						{
-							if afterFirst
-							{
-								features.push(',');
-							}
-							else
-							{
-								afterFirst = true;
-							}
-							features.push_str(toggledFeature.value());
-						}
-						
-						let bytes = features.as_bytes();
-						
-						LLVMAddTargetDependentFunctionAttr(functionReference, name.as_ptr() as *const _, bytes.as_ptr() as *const _)
-					}
+					
+					let bytes = features.as_bytes();
+					
+					LLVMAddTargetDependentFunctionAttr(functionReference, name.as_ptr() as *const _, bytes.as_ptr() as *const _)
+				}
 			}
 		}
 	}

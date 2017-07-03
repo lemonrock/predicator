@@ -5,25 +5,25 @@
 pub struct BasicBlockBuilder<'a>
 {
 	context: &'a Context,
-	functionReference: LLVMValueRef,
-	basicBlockReference: LLVMBasicBlockRef,
-	builder: Builder<'a>,
+	functionValue: FunctionValue,
+	pub basicBlockReference: LLVMBasicBlockRef,
+	pub builder: Builder<'a>,
 }
 
 impl<'a> BasicBlockBuilder<'a>
 {
 	#[inline(always)]
-	fn createBasicBlock(name: &str, context: &'a Context, functionReference: LLVMValueRef) -> BasicBlockBuilder<'a>
+	fn createBasicBlock(name: &str, context: &'a Context, functionValue: FunctionValue) -> BasicBlockBuilder<'a>
 	{
 		let name = CString::new(name.as_bytes()).unwrap();
-		let basicBlockReference = unsafe { LLVMAppendBasicBlockInContext(context.reference, functionReference, name.as_ptr()) };
+		let basicBlockReference = unsafe { LLVMAppendBasicBlockInContext(context.reference, functionValue.asLLVMValueRef(), name.as_ptr()) };
 		
 		let builder = context.builder();
 		
 		let this = Self
 		{
 			context,
-			functionReference,
+			functionValue,
 			basicBlockReference,
 			builder,
 		};
@@ -36,41 +36,40 @@ impl<'a> BasicBlockBuilder<'a>
 	#[inline(always)]
 	pub fn newBasicBlock(&self, to: &str) -> BasicBlockBuilder<'a>
 	{
-		Self::createBasicBlock(to, self.context, self.functionReference)
+		Self::createBasicBlock(to, self.context, self.functionValue)
 	}
 	
 	#[inline(always)]
-	pub fn parameterAt(&self, index: u32) -> LLVMValueRef
+	pub fn parameterAtAsPointer(&self, index: usize) -> Option<PointerValue>
 	{
-		unsafe { LLVMGetParam(self.functionReference, index) }
+		self.functionValue.parameterAt(index).map(|functionParameterValue| PointerValue::fromLLVMValueRef(functionParameterValue.asLLVMValueRef()) )
 	}
 	
 	#[inline(always)]
-	pub fn parameterAtAsPointer(&self, index: u32) -> Pointer
-	{
-		Pointer(self.parameterAt(index))
-	}
-	
 	pub fn returnVoid(self)
 	{
 		self.builder.returnVoid();
 	}
 	
+	#[inline(always)]
 	pub fn returnTrue(self)
 	{
-		self.builder.returnValue(&IntegerConstant::True);
+		self.builder.returnValue(&Constant::True);
 	}
 	
+	#[inline(always)]
 	pub fn returnFalse(self)
 	{
-		self.builder.returnValue(&IntegerConstant::False);
+		self.builder.returnValue(&Constant::False);
 	}
 	
+	#[inline(always)]
 	pub fn unconditionalBranch(self, to: &BasicBlockBuilder<'a>)
 	{
 		self.builder.unconditionalBranch(to.basicBlockReference);
 	}
 	
+	#[inline(always)]
 	pub fn unconditionalBranchWithCreation(self, to: &str) -> BasicBlockBuilder<'a>
 	{
 		let to = self.newBasicBlock(to);
@@ -78,18 +77,48 @@ impl<'a> BasicBlockBuilder<'a>
 		to
 	}
 	
+	#[inline(always)]
 	pub fn conditionalBranch(self, ifCondition: LLVMValueRef, thenBlock: &BasicBlockBuilder<'a>, elseBlock: &BasicBlockBuilder<'a>)
 	{
 		self.builder.conditionalBranch(ifCondition, thenBlock.basicBlockReference, elseBlock.basicBlockReference);
 	}
 	
 	/// integerValueOrConstant's integer type must match IntegerConstant but the API can't easily enforce this
-	pub fn switchBranch(self, integerValueOrConstant: LLVMValueRef, defaultBlock: &BasicBlockBuilder<'a>, caseBlocks: BTreeMap<IntegerConstant, BasicBlockBuilder<'a>>)
+	#[inline(always)]
+	pub fn switchBranch(self, integerValueOrConstant: LLVMValueRef, defaultBlock: &BasicBlockBuilder<'a>, caseBlocks: BTreeMap<u8, BasicBlockBuilder<'a>>)
 	{
 		let switchInstruction = self.builder.switchBranch(integerValueOrConstant, defaultBlock.basicBlockReference, caseBlocks.len());
 		for (constant, caseBlock) in caseBlocks.iter()
 		{
-			switchInstruction.addCase(constant, caseBlock.basicBlockReference)
+			switchInstruction.addCase(*constant, caseBlock.basicBlockReference)
 		}
+	}
+	
+	pub fn loadFromReferencedStructField(&self, PointerValue: PointerValue, fieldIndex: u32, offsetIntoBaseType: u64, from: TypeBasedAliasAnalysisNode, to: TypeBasedAliasAnalysisNode) -> LLVMValueRefWrapper
+	{
+		println!("HELLO5 A");
+		let arrayPointer = self.builder.getElementPointer_PointerToStructToPointerToField(PointerValue, 0, fieldIndex);
+		let tbaaLoad = TypeBasedAliasAnalysisNode::Path
+		{
+			baseType: Box::new(from),
+			
+			accessType: Box::new(to),
+			
+			offsetIntoBaseType: offsetIntoBaseType,
+			
+			isConstant: false,
+		};
+		println!("HELLO5 B");
+		self.builder.load(arrayPointer, Some(PowerOfTwoThirtyTwoBit::_8), Some(tbaaLoad))
+	}
+	
+	pub fn bitcastPointerToUnsignedCharPointer(&self, pointerValue: PointerValue) -> PointerValue
+	{
+		self.builder.bitcastPointerToUnsignedCharPointer(pointerValue)
+	}
+	
+	pub fn getElementPointer_ArrayIndex(&self, pointerValue: PointerValue, arrayIndex: u64) -> PointerValue
+	{
+		self.builder.getElementPointer_ArrayIndex(pointerValue, arrayIndex)
 	}
 }
