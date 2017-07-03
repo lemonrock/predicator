@@ -6,30 +6,38 @@
 pub struct ModuleDefinition
 {
 	pub name: String,
-	pub targetDataLayout: &'static str,
-	pub targetTriple: &'static str,
+	pub identifier: String,
+	pub targetTriple: CString,
+	pub targetMachineDataLayout: TargetMachineDataLayout,
 	pub inlineAssembler: Option<String>,
 	pub fieldDefinitions: Vec<FieldDefinition>,
 }
 
 impl ModuleDefinition
 {
-	pub fn newForAmd64Musl<S: Into<String>>(name: S, fieldDefinitions: Vec<FieldDefinition>) -> Self
+	pub fn newForHost<S: Into<String> + Clone>(name: S, fieldDefinitions: Vec<FieldDefinition>) -> Result<Self, String>
 	{
-		Self
-		{
-			name: name.into(),
-			targetDataLayout: "e-m:e-i64:64-f80:128-n8:16:32:64-S128",
-			targetTriple: "x86_64-pc-linux-musl",
-			inlineAssembler: None,
-			fieldDefinitions: fieldDefinitions,
-		}
+		let targetTriple = Target::defaultTargetTriple();
+		let targetMachineDataLayout = Target::createHostTargetMachine()?.targetMachineDataLayout();
+		
+		Ok
+		(
+			Self
+			{
+				name: name.clone().into(),
+				identifier: name.into(),
+				targetTriple: targetTriple,
+				targetMachineDataLayout: targetMachineDataLayout,
+				inlineAssembler: None,
+				fieldDefinitions: fieldDefinitions,
+			}
+		)
 	}
 	
 	#[inline(always)]
 	pub fn create(&self, context: &Context) -> Result<(Module, HashMap<String, GlobalValue>), String>
 	{
-		let module = context.createModule(&self.name, self.targetDataLayout, self.targetTriple, self.inlineAssembler.as_ref().map(String::as_str))?;
+		let module = context.createModule(&self.name, &self.identifier, &self.targetTriple, &self.targetMachineDataLayout, self.inlineAssembler.as_ref().map(String::as_str))?;
 		
 		let mut fields = HashMap::with_capacity(self.fieldDefinitions.len());
 		for fieldDefinition in self.fieldDefinitions.iter()

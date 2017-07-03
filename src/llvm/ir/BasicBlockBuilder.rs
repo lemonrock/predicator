@@ -96,20 +96,8 @@ impl<'a> BasicBlockBuilder<'a>
 	
 	pub fn loadFromReferencedStructField(&self, PointerValue: PointerValue, fieldIndex: u32, offsetIntoBaseType: u64, from: TypeBasedAliasAnalysisNode, to: TypeBasedAliasAnalysisNode) -> LLVMValueRefWrapper
 	{
-		println!("HELLO5 A");
 		let arrayPointer = self.builder.getElementPointer_PointerToStructToPointerToField(PointerValue, 0, fieldIndex);
-		let tbaaLoad = TypeBasedAliasAnalysisNode::Path
-		{
-			baseType: Box::new(from),
-			
-			accessType: Box::new(to),
-			
-			offsetIntoBaseType: offsetIntoBaseType,
-			
-			isConstant: false,
-		};
-		println!("HELLO5 B");
-		self.builder.load(arrayPointer, Some(PowerOfTwoThirtyTwoBit::_8), Some(tbaaLoad))
+		self.builder.load(arrayPointer, Some(PowerOfTwoThirtyTwoBit::_8), Some(TypeBasedAliasAnalysisNode::path(offsetIntoBaseType, from, to)))
 	}
 	
 	pub fn bitcastPointerToUnsignedCharPointer(&self, pointerValue: PointerValue) -> PointerValue

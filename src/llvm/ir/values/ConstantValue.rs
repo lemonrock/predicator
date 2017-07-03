@@ -13,7 +13,6 @@ impl Value for ConstantValue
 		let value = LLVMValueRefWrapper::fromLLVMValueRef(value);
 		
 		debug_assert!(value.isConstant(), "value '{:?}' isn't constant", value);
-		debug_assert!(value.isUndefined(), "value '{:?}' isn't defined", value);
 		
 		ConstantValue(value)
 	}
@@ -28,9 +27,9 @@ impl Value for ConstantValue
 impl ConstantValue
 {
 	#[inline(always)]
-	pub fn isNull(&self) -> bool
+	pub fn isUndefined(&self) -> bool
 	{
-		if unsafe { LLVMIsNull(self.asLLVMValueRef()) } == 0
+		if unsafe { LLVMIsUndef(self.asLLVMValueRef()) } == 0
 		{
 			false
 		}

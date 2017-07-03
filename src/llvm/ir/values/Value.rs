@@ -2,13 +2,19 @@
 // Copyright © 2017 The developers of mqtt. See the COPYRIGHT file in the top-level directory of this distribution and at https://raw.githubusercontent.com/lemonrock/mqtt/master/COPYRIGHT.
 
 
-pub trait Value
+pub trait Value: Sized
 {
 	#[inline(always)]
 	fn fromLLVMValueRef(value: LLVMValueRef) -> Self;
 	
 	#[inline(always)]
 	fn asLLVMValueRef(&self) -> LLVMValueRef;
+	
+	#[inline(always)]
+	fn fromLLVMValueRefWrapper(wrapper: LLVMValueRefWrapper) -> Self
+	{
+		Self::fromLLVMValueRef(wrapper.asLLVMValueRef())
+	}
 	
 	#[inline(always)]
 	fn typeOf(&self) -> LLVMTypeRef

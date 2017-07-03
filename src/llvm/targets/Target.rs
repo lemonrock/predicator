@@ -13,17 +13,22 @@ impl Target
 {
 	pub fn createHostOrcJitStack() -> Result<OrcJitStack, String>
 	{
-		let hostTarget = Target::obtainTargetForHost()?;
-		let hostCpuName = ::llvmHostCpuName()?;
-		let hostCpuFeatures = ::llvmHostCpuFeatures()?;
-		
-		let hostTargetMachine = hostTarget.createTargetMachine(hostCpuName.as_ptr(), hostCpuFeatures.as_ptr(), LLVMCodeGenOptLevel::LLVMCodeGenLevelAggressive, LLVMRelocMode::LLVMRelocStatic, LLVMCodeModel::LLVMCodeModelJITDefault)?;
+		let hostTargetMachine = Self::createHostTargetMachine()?;
 		let orcJitStack = hostTargetMachine.toOrcJitStack()?;
 		Ok(orcJitStack)
 	}
 	
+	pub fn createHostTargetMachine() -> Result<TargetMachine, String>
+	{
+		let hostTarget = Target::obtainTargetForHost()?;
+		let hostCpuName = ::llvmHostCpuName()?;
+		let hostCpuFeatures = ::llvmHostCpuFeatures()?;
+		
+		hostTarget.createTargetMachine(hostCpuName.as_ptr(), hostCpuFeatures.as_ptr(), LLVMCodeGenOptLevel::LLVMCodeGenLevelAggressive, LLVMRelocMode::LLVMRelocStatic, LLVMCodeModel::LLVMCodeModelJITDefault)
+	}
+	
 	#[inline(always)]
-	fn defaultTargetTriple() -> CString
+	pub fn defaultTargetTriple() -> CString
 	{
 		let result = unsafe { LLVMGetDefaultTargetTriple() };
 		

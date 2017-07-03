@@ -3,12 +3,9 @@
 
 
 use super::*;
-use ::libc::c_char;
 use ::libc::c_void;
 use ::rust_extra::unlikely;
-use ::std::ffi::CStr;
 use ::std::mem::transmute;
-use ::std::mem::uninitialized;
 use ::std::ptr::null_mut;
 use ::std::rc::Rc;
 
@@ -17,5 +14,3 @@ include!("ModuleInOrcJitStack.rs");
 include!("ObjectFile.rs");
 include!("OrcJitStack.rs");
 include!("OrcJitStackDropWrapper.rs");
-include!("Target.rs");
-include!("TargetMachine.rs");

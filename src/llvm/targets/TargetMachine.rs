@@ -23,6 +23,15 @@ impl Drop for TargetMachine
 impl TargetMachine
 {
 	#[inline(always)]
+	pub fn targetMachineDataLayout(&self) -> TargetMachineDataLayout
+	{
+		TargetMachineDataLayout
+		{
+			reference: unsafe { LLVMCreateTargetDataLayout(self.reference) },
+		}
+	}
+	
+	#[inline(always)]
 	pub fn toOrcJitStack(mut self) -> Result<OrcJitStack, String>
 	{
 		let orcJitStackReference = unsafe { LLVMOrcCreateInstance(self.reference) };

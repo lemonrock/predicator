@@ -68,32 +68,14 @@ impl<'a> Builder<'a>
 	*/
 	fn getElementPointer_PointerToStructToPointerToField(&self, arrayPointer: PointerValue, arrayIndex: u64, fieldIndex: u32) -> PointerValue
 	{
-		let mut indices = Vec::with_capacity(2);
-		indices.push(self.context.constant(&Constant::integer64BitUnsigned(arrayIndex)).asLLVMValueRef());
-		indices.push(self.context.constant(&Constant::integer32BitUnsigned(fieldIndex)).asLLVMValueRef());
+		let mut indices: [LLVMValueRef; 2] =
+		[
+			self.context.constant(&Constant::integer64BitUnsigned(arrayIndex)).asLLVMValueRef(),
+			self.context.constant(&Constant::integer32BitUnsigned(fieldIndex)).asLLVMValueRef(),
+		];
 		
-//		let mut indices: [LLVMValueRef; 2] =
-//		[
-//			self.context.constant(&Constant::integer64BitUnsigned(arrayIndex)),
-//			self.context.constant(&Constant::integer32BitUnsigned(fieldIndex)),
-//		];
-		
-		println!("HELLO xxx");
-		println!("HMMM {:?}", self.reference);
-		println!("HMMM2 {:?}", indices[0]);
-		println!("HMMM3 {:?}", indices[1]);
-		
-		let x = CString::new("Hello").unwrap();
-		println!("HMMM3 {:?}", x);
-		println!("HMMM3 {:?}", arrayPointer.asLLVMValueRef());
-		
-		
-		let x = unsafe { LLVMBuildInBoundsGEP(self.reference, arrayPointer.asLLVMValueRef(), indices.as_mut_ptr(), indices.len() as u32, x.as_ptr()) };
-		
-		println!("HELLO yyy");
-		let z = PointerValue::fromLLVMValueRef(x);
-		
-		z
+		let x = unsafe { LLVMBuildInBoundsGEP(self.reference, arrayPointer.asLLVMValueRef(), indices.as_mut_ptr(), indices.len() as u32, Self::EmptyName()) };
+		PointerValue::fromLLVMValueRef(x)
 	}
 	
 	fn getElementPointer_ArrayIndex(&self, arrayPointer: PointerValue, arrayIndex: u64) -> PointerValue
@@ -120,7 +102,7 @@ impl<'a> Builder<'a>
 			unsafe { LLVMSetMetadata(instruction, self.context.metadataKind_tbaa(), self.context.typeBasedAliasAnalysisNode(typeBasedAliasAnalysisNode).asLLVMValueRef()) };
 		}
 		
-		LLVMValueRefWrapper(instruction)
+		LLVMValueRefWrapper::fromLLVMValueRef(instruction)
 	}
 	
 	fn bitcastPointerToUnsignedCharPointer(&self, pointerValue: PointerValue) -> PointerValue

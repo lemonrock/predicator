@@ -188,7 +188,7 @@ impl Context
 	}
 	
 	#[inline(always)]
-	pub fn createModule(&self, name: &str, dataLayout: &str, targetTriple: &str, inlineAssembler: Option<&str>) -> Result<Module, String>
+	pub fn createModule(&self, name: &str, identifier: &str, targetTriple: &CStr, targetMachineDataLayout: &TargetMachineDataLayout, inlineAssembler: Option<&str>) -> Result<Module, String>
 	{
 		let cName = CString::new(name).expect("name contains embedded NULs");
 		let reference = unsafe { LLVMModuleCreateWithNameInContext(cName.as_ptr(), self.reference) };
@@ -198,15 +198,12 @@ impl Context
 		}
 		else
 		{
-			// It is believed that the identifier is the same as the name
-			//let identifierBytes = identifier.as_bytes();
-			//unsafe { LLVMSetModuleIdentifier(reference, identifierBytes.as_ptr() as *const _, identifierBytes.len() as usize) };
+			let identifierBytes = identifier.as_bytes();
+			unsafe { LLVMSetModuleIdentifier(reference, identifierBytes.as_ptr() as *const _, identifierBytes.len() as usize) };
 			
-			let cDataLayout = CString::new(dataLayout).expect("dataLayout contains embedded NULs");
-			unsafe { LLVMSetDataLayout(reference, cDataLayout.as_ptr()) };
+			unsafe { LLVMSetTarget(reference, targetTriple.as_ptr()) };
 			
-			let cTargetTriple = CString::new(targetTriple).expect("targetTriple contains embedded NULs");
-			unsafe { LLVMSetTarget(reference, cTargetTriple.as_ptr()) };
+			targetMachineDataLayout.setOnModule(reference);
 			
 			if let Some(inlineAssembler) = inlineAssembler
 			{

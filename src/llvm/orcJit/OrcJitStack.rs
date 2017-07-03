@@ -5,8 +5,8 @@
 #[derive(Clone)]
 pub struct OrcJitStack
 {
-	reference: LLVMOrcJITStackRef,
-	dropWrapper: Rc<OrcJitStackDropWrapper>,
+	pub(crate) reference: LLVMOrcJITStackRef,
+	pub(crate) dropWrapper: Rc<OrcJitStackDropWrapper>,
 }
 
 impl OrcJitStack

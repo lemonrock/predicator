@@ -3,7 +3,7 @@
 
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct LLVMValueRefWrapper(pub LLVMValueRef);
+pub struct LLVMValueRefWrapper(LLVMValueRef);
 
 impl Debug for LLVMValueRefWrapper
 {
@@ -18,7 +18,7 @@ impl LLVMValueRefWrapper
 	#[inline(always)]
 	pub fn fromLLVMValueRef(value: LLVMValueRef) -> Self
 	{
-		debug_assert!(!value.is_null(), "value is null");
+		debug_assert!(!value.is_null(), "value is null pointer");
 		
 		LLVMValueRefWrapper(value)
 	}
@@ -82,9 +82,9 @@ impl LLVMValueRefWrapper
 	}
 	
 	#[inline(always)]
-	pub fn isUndefined(&self) -> bool
+	pub fn isNull(&self) -> bool
 	{
-		if unsafe { LLVMIsUndef(self.0) } == 0
+		if unsafe { LLVMIsNull(self.0) } == 0
 		{
 			false
 		}

@@ -117,6 +117,7 @@ impl TypeBasedAliasAnalysisNode
 		)
 	}
 	
+	#[inline(always)]
 	pub fn omnipotent_char() -> Self
 	{
 		TypeBasedAliasAnalysisNode::Scalar
@@ -127,6 +128,7 @@ impl TypeBasedAliasAnalysisNode
 		}
 	}
 	
+	#[inline(always)]
 	pub fn short() -> Self
 	{
 		TypeBasedAliasAnalysisNode::Scalar
@@ -137,6 +139,7 @@ impl TypeBasedAliasAnalysisNode
 		}
 	}
 	
+	#[inline(always)]
 	pub fn int() -> Self
 	{
 		TypeBasedAliasAnalysisNode::Scalar
@@ -147,6 +150,7 @@ impl TypeBasedAliasAnalysisNode
 		}
 	}
 	
+	#[inline(always)]
 	pub fn long() -> Self
 	{
 		TypeBasedAliasAnalysisNode::Scalar
@@ -157,6 +161,7 @@ impl TypeBasedAliasAnalysisNode
 		}
 	}
 	
+	#[inline(always)]
 	pub fn long_long() -> Self
 	{
 		TypeBasedAliasAnalysisNode::Scalar
@@ -167,12 +172,25 @@ impl TypeBasedAliasAnalysisNode
 		}
 	}
 	
+	#[inline(always)]
 	pub fn any_pointer() -> Self
 	{
 		TypeBasedAliasAnalysisNode::Scalar
 		{
 			name: "any pointer".to_owned(),
 			parent: Some(Box::new(Self::omnipotent_char())),
+			isConstant: false,
+		}
+	}
+	
+	#[inline(always)]
+	pub fn path(offsetIntoBaseType: u64, from: TypeBasedAliasAnalysisNode, to: TypeBasedAliasAnalysisNode) -> Self
+	{
+		TypeBasedAliasAnalysisNode::Path
+		{
+			baseType: Box::new(from),
+			accessType: Box::new(to),
+			offsetIntoBaseType: offsetIntoBaseType,
 			isConstant: false,
 		}
 	}

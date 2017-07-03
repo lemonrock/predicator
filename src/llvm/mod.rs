@@ -15,6 +15,7 @@ use self::ir::types::*;
 use self::ir::values::*;
 use self::machineCodeJit::*;
 use self::orcJit::*;
+use self::targets::*;
 use ::libc::c_char;
 use ::libc::c_uint;
 use ::libc::c_void;
@@ -48,6 +49,7 @@ use ::std::rc::Rc;
 pub mod ir;
 pub mod machineCodeJit;
 pub mod orcJit;
+pub mod targets;
 
 
 include!("Context.rs");

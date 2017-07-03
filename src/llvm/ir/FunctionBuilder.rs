@@ -11,7 +11,7 @@ pub struct FunctionBuilder<'a>
 impl<'a> FunctionBuilder<'a>
 {
 	#[inline(always)]
-	pub fn withFirstBasicBlock(self, name: &str) -> BasicBlockBuilder<'a>
+	pub fn withEntryBasicBlock(self, name: &str) -> BasicBlockBuilder<'a>
 	{
 		BasicBlockBuilder::createBasicBlock(name, self.context, self.functionValue)
 	}

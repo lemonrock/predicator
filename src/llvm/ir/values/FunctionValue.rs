@@ -25,14 +25,13 @@ impl FunctionValue
 	#[inline(always)]
 	pub fn parameterAt(&self, index: usize) -> Option<FunctionParameterValue>
 	{
-		let parameter = unsafe { LLVMGetParam(self.asLLVMValueRef(), index as u32) };
-		if parameter.is_null()
+		if index >= self.numberOfParameters()
 		{
 			None
 		}
 		else
 		{
-			Some(FunctionParameterValue::fromLLVMValueRef(parameter))
+			Some(FunctionParameterValue::fromLLVMValueRef(unsafe { LLVMGetParam(self.asLLVMValueRef(), index as u32) }))
 		}
 	}
 	
