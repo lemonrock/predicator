@@ -8,7 +8,6 @@ use super::*;
 pub mod enums;
 
 
-include!("Attribute.rs");
 include!("FunctionAttribute.rs");
 include!("ParameterAttribute.rs");
 include!("TargetDependentFunctionAttribute.rs");

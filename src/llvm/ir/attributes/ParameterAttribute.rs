@@ -27,10 +27,10 @@ pub enum ParameterAttribute
 	writeonly, // Overlaps with function attributes
 }
 
-impl Attribute for ParameterAttribute
+impl ToReference<LLVMAttributeRef> for ParameterAttribute
 {
 	//noinspection SpellCheckingInspection
-	fn to_attributeRef(&self, context: &Context) -> LLVMAttributeRef
+	fn toReference(&self, context: &Context) -> LLVMAttributeRef
 	{
 		use self::ParameterAttribute::*;
 		

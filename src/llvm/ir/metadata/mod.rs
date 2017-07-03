@@ -3,19 +3,7 @@
 
 
 use super::*;
-use ::std::fmt;
-use ::std::fmt::Debug;
-use ::std::fmt::Formatter;
 
 
-include!("ConstantValue.rs");
-include!("FunctionValue.rs");
-include!("FunctionParameterValue.rs");
-include!("GlobalValue.rs");
-include!("LLVMValueRefWrapper.rs");
-include!("MetadataNodeValue.rs");
-include!("MetadataStringValue.rs");
-include!("PointerValue.rs");
-include!("TerminatorValue.rs");
-include!("TypeBasedAliasAnalysisNodeValue.rs");
-include!("Value.rs");
+include!("MetadataKind.rs");
+include!("MetadataNode.rs");

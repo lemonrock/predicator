@@ -7,13 +7,53 @@ pub struct Context
 {
 	reference: LLVMContextRef,
 	dropWrapper: Rc<ContextDropWrapper>,
-	typeRefCache: RefCell<HashMap<LlvmType, LLVMTypeRefWrapper>>,
-	constantCache: RefCell<HashMap<Constant, ConstantValue>>,
-	functionAttributeCache: RefCell<HashMap<FunctionAttribute, LLVMAttributeRef>>,
-	parameterAttributeCache: RefCell<HashMap<ParameterAttribute, LLVMAttributeRef>>,
 	enumAttributeIdentifierCache: EnumAttributeIdentifierCache,
-	metaDataStringsCache: RefCell<HashMap<String, MetadataStringValue>>,
-	typeBasedAliasAnalysisNodeCache: RefCell<HashMap<TypeBasedAliasAnalysisNode, TypeBasedAliasAnalysisNodeValue>>,
+	typeRefCache: ContextCache<LlvmType, LLVMTypeRefWrapper>,
+	constantCache: ContextCache<Constant, ConstantValue>,
+	functionAttributeCache: ContextCache<FunctionAttribute, LLVMAttributeRef>,
+	parameterAttributeCache: ContextCache<ParameterAttribute, LLVMAttributeRef>,
+	metadataStringCache: RefCell<HashMap<String, MetadataStringValue>>,
+	metadataNodeCache: ContextCache<MetadataNode, MetadataNodeValue>,
+}
+
+#[derive(Clone)]
+struct ContextCache<Key: ToReference<Value> + Clone, Value: Copy>
+{
+	cache: RefCell<HashMap<Key, Value>>
+}
+
+impl<Key: ToReference<Value> + Clone, Value: Copy> Default for ContextCache<Key, Value>
+{
+	fn default() -> Self
+	{
+		Self
+		{
+			cache: RefCell::new(HashMap::with_capacity(16)),
+		}
+	}
+}
+
+impl<Key: ToReference<Value> + Clone, Value: Copy> ContextCache<Key, Value>
+{
+	#[inline(always)]
+	pub fn getOrAdd(&self, key: &Key, context: &Context) -> Value
+	{
+		{
+			let cache = &mut self.cache.borrow();
+			if let Some(extant) = cache.get(key)
+			{
+				return *extant;
+			}
+		}
+		
+		let value = key.toReference(context);
+		
+		let cache = &mut self.cache.borrow_mut();
+		
+		cache.insert(key.clone(), value);
+		
+		value
+	}
 }
 
 impl Context
@@ -32,58 +72,17 @@ impl Context
 			{
 				reference: reference,
 				dropWrapper: Rc::new(ContextDropWrapper(reference)),
-				typeRefCache: RefCell::new(HashMap::new()),
-				constantCache: RefCell::new(HashMap::new()),
-				functionAttributeCache: RefCell::new(HashMap::with_capacity(8)),
-				parameterAttributeCache: RefCell::new(HashMap::with_capacity(8)),
 				enumAttributeIdentifierCache: enumAttributeIdentifierCache,
-				metaDataStringsCache: RefCell::new(HashMap::new()),
-				typeBasedAliasAnalysisNodeCache: RefCell::new(HashMap::new()),
+				typeRefCache: ContextCache::default(),
+				constantCache: ContextCache::default(),
+				functionAttributeCache: ContextCache::default(),
+				parameterAttributeCache: ContextCache::default(),
+				metadataStringCache: RefCell::new(HashMap::new()),
+				metadataNodeCache: ContextCache::default(),
 			};
 			
 			Ok(this)
 		}
-	}
-	
-	#[inline(always)]
-	pub fn typeRef(&self, llvmType: &LlvmType) -> LLVMTypeRefWrapper
-	{
-		let mut typeRefCache = &mut self.typeRefCache.borrow_mut();
-		if let Some(extant) = typeRefCache.get(llvmType)
-		{
-			return *extant;
-		}
-		
-		let value = llvmType.toLLVMTypeRefWrapper(self);
-		
-		typeRefCache.insert(llvmType.clone(), value);
-		
-		value
-	}
-	
-	#[inline(always)]
-	pub fn constant(&self, constant: &Constant) -> ConstantValue
-	{
-		let mut constantCache = &mut self.constantCache.borrow_mut();
-		if let Some(extant) = constantCache.get(constant)
-		{
-			return *extant;
-		}
-		
-		let value = constant.toConstantValue(self);
-		
-		constantCache.insert(constant.clone(), value);
-		
-		value
-	}
-	
-	#[inline(always)]
-	pub fn enumAttribute(&self, enumAttributeName: EnumAttributeName, value: u64) -> LLVMAttributeRef
-	{
-		let identifier = self.enumAttributeIdentifierCache.identifier(enumAttributeName);
-		let reference = unsafe { LLVMCreateEnumAttribute(self.reference, identifier.0, value) };
-		debug_assert!(!reference.is_null(), "Enum Attribute Name '{:?}' is null", enumAttributeName);
-		reference
 	}
 	
 	#[inline(always)]
@@ -101,12 +100,35 @@ impl Context
 		reference
 	}
 	
+	#[inline(always)]
+	pub fn enumAttribute(&self, enumAttributeName: EnumAttributeName, value: u64) -> LLVMAttributeRef
+	{
+		let identifier = self.enumAttributeIdentifierCache.identifier(enumAttributeName);
+		let reference = unsafe { LLVMCreateEnumAttribute(self.reference, identifier.0, value) };
+		debug_assert!(!reference.is_null(), "Enum Attribute Name '{:?}' is null", enumAttributeName);
+		reference
+	}
+	
+	#[inline(always)]
+	pub fn typeRef(&self, llvmType: &LlvmType) -> LLVMTypeRefWrapper
+	{
+		self.typeRefCache.getOrAdd(llvmType, self)
+	}
+	
+	#[inline(always)]
+	pub fn constant(&self, constant: &Constant) -> ConstantValue
+	{
+		self.constantCache.getOrAdd(constant, self)
+	}
+	
 	pub fn metadataString(&self, string: &str) -> MetadataStringValue
 	{
-		let mut cache = self.metaDataStringsCache.borrow_mut();
-		if let Some(value) = cache.get(string)
 		{
-			return *value;
+			let cache = self.metadataStringCache.borrow();
+			if let Some(value) = cache.get(string)
+			{
+				return *value;
+			}
 		}
 		
 		let owned = string.to_owned();
@@ -117,6 +139,7 @@ impl Context
 			MetadataStringValue::fromLLVMValueRef(unsafe { LLVMMDStringInContext(self.reference, bytes.as_ptr() as *const _, bytes.len() as u32) })
 		};
 		
+		let mut cache = self.metadataStringCache.borrow_mut();
 		cache.insert(owned, value);
 		
 		value
@@ -124,49 +147,22 @@ impl Context
 	
 	pub fn typeBasedAliasAnalysisNode(&self, typeBasedAliasAnalysisNode: &TypeBasedAliasAnalysisNode) -> TypeBasedAliasAnalysisNodeValue
 	{
-		let mut cache = self.typeBasedAliasAnalysisNodeCache.borrow_mut();
-		if let Some(value) = cache.get(typeBasedAliasAnalysisNode)
-		{
-			return *value;
-		}
-		
-		let value = typeBasedAliasAnalysisNode.toTypeBasedAliasAnalysisNodeValue(self);
-		
-		cache.insert(typeBasedAliasAnalysisNode.clone(), value);
-		
-		value
+		self.metadataNode(&typeBasedAliasAnalysisNode.toMetadataNode()).toTypeBasedAliasAnalysisNodeValue()
 	}
 	
-	pub fn functionAttributeRef(&self, attribute: FunctionAttribute) -> LLVMAttributeRef
+	pub fn metadataNode(&self, metadataNode: &MetadataNode) -> MetadataNodeValue
 	{
-		let cache = &mut self.functionAttributeCache.borrow_mut();
-		
-		if let Some(attribute) = cache.get(&attribute)
-		{
-			return *attribute;
-		}
-		
-		let attributeRef = attribute.to_attributeRef(self);
-		
-		cache.insert(attribute, attributeRef);
-		
-		attributeRef
+		self.metadataNodeCache.getOrAdd(metadataNode, self)
 	}
 	
-	pub fn parameterAttributeRef(&self, attribute: ParameterAttribute) -> LLVMAttributeRef
+	pub fn functionAttributeRef(&self, attribute: &FunctionAttribute) -> LLVMAttributeRef
 	{
-		let cache = &mut self.parameterAttributeCache.borrow_mut();
-		
-		if let Some(attribute) = cache.get(&attribute)
-		{
-			return *attribute;
-		}
-		
-		let attributeRef = attribute.to_attributeRef(self);
-		
-		cache.insert(attribute, attributeRef);
-		
-		attributeRef
+		self.functionAttributeCache.getOrAdd(attribute, self)
+	}
+	
+	pub fn parameterAttributeRef(&self, attribute: &ParameterAttribute) -> LLVMAttributeRef
+	{
+		self.parameterAttributeCache.getOrAdd(attribute, self)
 	}
 	
 	#[inline(always)]

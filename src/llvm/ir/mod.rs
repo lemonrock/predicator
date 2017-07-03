@@ -18,6 +18,7 @@ use ::std::collections::HashSet;
 
 pub mod attributes;
 pub mod constants;
+pub mod metadata;
 pub mod typeBasedAliasAnalysis;
 pub mod types;
 pub mod useful;
@@ -31,6 +32,9 @@ include!("FieldDefinition.rs");
 include!("FieldVariant.rs");
 include!("FunctionBuilder.rs");
 include!("FunctionDeclaration.rs");
+include!("FunctionDefinition.rs");
 include!("FunctionParameter.rs");
 include!("LlvmType.rs");
 include!("ModuleDefinition.rs");
+include!("ToReference.rs");
+include!("UnnamedAddressAttribute.rs");

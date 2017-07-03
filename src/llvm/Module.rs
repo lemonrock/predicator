@@ -73,9 +73,22 @@ impl Module
 	}
 	
 	#[inline(always)]
-	pub fn addFunction<'a>(&self, context: &'a Context, functionDeclaration: &FunctionDeclaration) -> FunctionBuilder<'a>
+	pub fn addFunctionDefinition<'a>(&self, context: &'a Context, functionDefinition: &FunctionDefinition) -> FunctionBuilder<'a>
+	{
+		functionDefinition.create(context, self)
+	}
+	
+	#[inline(always)]
+	pub fn addFunctionDeclaration(&self, context: &Context, functionDeclaration: &FunctionDeclaration) -> FunctionValue
 	{
 		functionDeclaration.create(context, self)
+	}
+	
+	#[inline(always)]
+	pub fn addMetadata(&self, context: &Context, key: &str, metadata: &MetadataNode)
+	{
+		let key = CString::new(key).unwrap();
+		unsafe { LLVMAddNamedMetadataOperand(self.reference, key.as_ptr(), context.metadataNode(metadata).asLLVMValueRef()) }
 	}
 	
 	#[inline(always)]

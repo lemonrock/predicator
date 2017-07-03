@@ -38,12 +38,19 @@ pub enum Constant
 	{
 		llvmType: LlvmType,
 	},
+	
+	ByteString
+	{
+		llvmType: LlvmType,
+		value: Vec<u8>,
+		appendAsciiNull: bool,
+	}
 }
 
-impl Constant
+impl ToReference<ConstantValue> for Constant
 {
 	#[inline(always)]
-	pub fn toConstantValue(&self, context: &Context) -> ConstantValue
+	fn toReference(&self, context: &Context) -> ConstantValue
 	{
 		use self::Constant::*;
 		
@@ -79,7 +86,7 @@ impl Constant
 				{
 					let typeRef = context.typeRef(&llvmType).asLLVMTypeRef();
 					
-					let mut values: Vec<LLVMValueRef> = values.iter().map(|constant| constant.toConstantValue(context).asLLVMValueRef()).collect();
+					let mut values: Vec<LLVMValueRef> = values.iter().map(|constant| constant.toReference(context).asLLVMValueRef()).collect();
 					
 					unsafe { LLVMConstNamedStruct(typeRef, values.as_mut_ptr(), values.len() as u32) }
 				}
@@ -104,10 +111,27 @@ impl Constant
 					
 					unsafe { LLVMGetUndef(typeRef) }
 				}
+				
+				ByteString { ref value, ref appendAsciiNull, .. } =>
+				{
+					let appendAsciiNull = if *appendAsciiNull
+					{
+						1
+					}
+					else
+					{
+						0
+					};
+					
+					unsafe { LLVMConstString(value.as_ptr() as *const _, value.len() as u32, appendAsciiNull) }
+				}
 			}
 		)
 	}
-	
+}
+
+impl Constant
+{
 	#[inline(always)]
 	pub fn llvmType(&self) -> &LlvmType
 	{
@@ -126,6 +150,8 @@ impl Constant
 			Zeroed { ref llvmType } => llvmType,
 			
 			Undefined { ref llvmType } => llvmType,
+			
+			ByteString { ref llvmType, .. } => llvmType,
 		}
 	}
 	
@@ -312,6 +338,17 @@ impl Constant
 		Constant::Undefined
 		{
 			llvmType: underlying,
+		}
+	}
+	
+	#[inline(always)]
+	pub fn byteString(value: String, appendAsciiNull: bool) -> Self
+	{
+		Constant::ByteString
+		{
+			llvmType: LlvmType::pointer(LlvmType::Int8),
+			value: value.into_bytes(),
+			appendAsciiNull: appendAsciiNull,
 		}
 	}
 }

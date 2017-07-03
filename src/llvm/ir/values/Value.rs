@@ -17,6 +17,12 @@ pub trait Value: Sized
 	}
 	
 	#[inline(always)]
+	fn asLLVMValueRefWrapper(&self) -> LLVMValueRefWrapper
+	{
+		LLVMValueRefWrapper(self.asLLVMValueRef())
+	}
+	
+	#[inline(always)]
 	fn typeOf(&self) -> LLVMTypeRef
 	{
 		unsafe { LLVMTypeOf(self.asLLVMValueRef()) }

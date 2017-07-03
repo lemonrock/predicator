@@ -48,10 +48,10 @@ pub enum FunctionAttribute
 	uwtable,
 }
 
-impl Attribute for FunctionAttribute
+impl ToReference<LLVMAttributeRef> for FunctionAttribute
 {
 	//noinspection SpellCheckingInspection
-	fn to_attributeRef(&self, context: &Context) -> LLVMAttributeRef
+	fn toReference(&self, context: &Context) -> LLVMAttributeRef
 	{
 		use self::FunctionAttribute::*;
 		

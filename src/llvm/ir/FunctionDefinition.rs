@@ -2,7 +2,7 @@
 // Copyright © 2017 The developers of predicator. See the COPYRIGHT file in the top-level directory of this distribution and at https://raw.githubusercontent.com/lemonrock/predicator/master/COPYRIGHT.
 
 
-pub struct FunctionDeclaration
+pub struct FunctionDefinition
 {
 	name: CString,
 	returns: FunctionParameter,
@@ -12,61 +12,57 @@ pub struct FunctionDeclaration
 	targetDependentFunctionAttributes: HashSet<TargetDependentFunctionAttribute>,
 	callingConvention: UsefulLLVMCallConv,
 	garbageCollectorStrategy: Option<CString>,
+	personalityFunctionReference: Option<LLVMValueRefWrapper>,
 	
 	linkage: UsefulLLVMLinkage,
 	visibility: UsefulLLVMVisibility,
+	section: Option<String>,
 	dllStorageClass: Option<UsefulLLVMDLLStorageClass>,
-	unnamedAddress: Option<UnnamedAddressAttribute>,
+	hasUnnamedAddress: bool,
 	alignment: Option<PowerOfTwoThirtyTwoBit>,
 }
 
-impl FunctionDeclaration
+impl FunctionDefinition
 {
 	#[inline(always)]
-	pub fn intrinsic_llvm_memcpy_p0i8_p0i8_i64() -> Self
+	pub fn public(name: &str, returns: FunctionParameter, parameters: Vec<FunctionParameter>) -> Self
 	{
-		Self
+		use self::FunctionAttribute::*;
+		
+		let functionAttributes = hashset!
 		{
-			name: CString::new("llvm.memcpy.p0i8.p0i8.i64").unwrap(),
-			returns: FunctionParameter::void(),
-			parameters: vec!
-			[
-				// i8* nocapture writeonly, i8* nocapture readonly, i64, i32, i1
-				FunctionParameter::pointer(&LlvmType::Int8, hashset!
-				{
-					ParameterAttribute::nocapture,
-					ParameterAttribute::writeonly,
-				}),
-				FunctionParameter::pointer(&LlvmType::Int8, hashset!
-				{
-					ParameterAttribute::nocapture,
-					ParameterAttribute::readonly,
-				}),
-				FunctionParameter::simple(LlvmType::Int64),
-				FunctionParameter::simple(LlvmType::Int32),
-				FunctionParameter::boolean(),
-			],
-			hasVarArgs: false,
-			functionAttributes: hashset!
-			{
-				FunctionAttribute::argmemonly,
-				FunctionAttribute::nounwind
-			},
-			targetDependentFunctionAttributes: hashset!{},
-			callingConvention: UsefulLLVMCallConv::LLVMCCallConv,
-			garbageCollectorStrategy: None,
+			norecurse,
 			
-			linkage: UsefulLLVMLinkage::LLVMExternalLinkage,
-			visibility: UsefulLLVMVisibility::LLVMDefaultVisibility,
-			dllStorageClass: None,
-			unnamedAddress: None,
-			alignment: None,
-		}
-	}
-	
-	#[inline(always)]
-	pub fn intrinsic(name: &str, returns: FunctionParameter, parameters: Vec<FunctionParameter>, functionAttributes: HashSet<FunctionAttribute>, targetDependentFunctionAttributes: HashSet<TargetDependentFunctionAttribute>) -> Self
-	{
+			nounwind,
+			uwtable,
+			
+			sspstrong,
+		};
+		
+		use self::TargetFeature::*;
+		use self::ToggledTargetFeature::*;
+		let targetDependentFunctionAttributes = hashset!
+		{
+			TargetDependentFunctionAttribute::stack_protector_buffer_size(PowerOfTwoThirtyTwoBit::_8),
+			
+			TargetDependentFunctionAttribute::disable_tail_calls(false),
+			TargetDependentFunctionAttribute::no_frame_pointer_elim(true),
+			TargetDependentFunctionAttribute::no_frame_pointer_elim_non_leaf,
+			TargetDependentFunctionAttribute::no_jump_tables(false),
+			
+			TargetDependentFunctionAttribute::correctly_rounded_divide_sqrt_fp_math(false),
+			TargetDependentFunctionAttribute::less_precise_fpmad(false),
+			TargetDependentFunctionAttribute::no_infs_fp_math(false),
+			TargetDependentFunctionAttribute::no_nans_fp_math(false),
+			TargetDependentFunctionAttribute::no_signed_zeros_fp_math(false),
+			TargetDependentFunctionAttribute::no_trapping_math(false),
+			TargetDependentFunctionAttribute::unsafe_fp_math(false),
+			TargetDependentFunctionAttribute::use_soft_float(false),
+			
+			//TargetDependentFunctionAttribute::target_cpu(b"core2"),
+			TargetDependentFunctionAttribute::target_features(vec![On(cx16), On(fxsr), On(cx16), On(sse), On(sse2), On(ssse3), On(x87)]),
+		};
+		
 		Self
 		{
 			name: CString::new(name).unwrap(),
@@ -77,19 +73,43 @@ impl FunctionDeclaration
 			targetDependentFunctionAttributes: targetDependentFunctionAttributes,
 			callingConvention: UsefulLLVMCallConv::LLVMCCallConv,
 			garbageCollectorStrategy: None,
-			// prefix: ?,
-			// prologue: ?,
+			personalityFunctionReference: None,
 			
 			linkage: UsefulLLVMLinkage::LLVMExternalLinkage,
 			visibility: UsefulLLVMVisibility::LLVMDefaultVisibility,
+			section: None,
 			dllStorageClass: None,
-			unnamedAddress: None,
+			hasUnnamedAddress: false,
 			alignment: None,
 		}
 	}
 	
 	#[inline(always)]
-	pub(crate) fn create(&self, context: &Context, module: &Module) -> FunctionValue
+	pub fn private(name: &str, returns: FunctionParameter, parameters: Vec<FunctionParameter>, functionAttributes: HashSet<FunctionAttribute>, targetDependentFunctionAttributes: HashSet<TargetDependentFunctionAttribute>) -> Self
+	{
+		Self
+		{
+			name: CString::new(name).unwrap(),
+			returns: returns,
+			parameters: parameters,
+			hasVarArgs: false,
+			functionAttributes: functionAttributes,
+			targetDependentFunctionAttributes: targetDependentFunctionAttributes,
+			callingConvention: UsefulLLVMCallConv::LLVMFastCallConv,
+			garbageCollectorStrategy: None,
+			personalityFunctionReference: None,
+			
+			linkage: UsefulLLVMLinkage::LLVMLinkerPrivateLinkage,
+			visibility: UsefulLLVMVisibility::LLVMDefaultVisibility,
+			section: None,
+			dllStorageClass: None,
+			hasUnnamedAddress: false,
+			alignment: None,
+		}
+	}
+	
+	#[inline(always)]
+	pub(crate) fn create<'a>(&self, context: &'a Context, module: &Module) -> FunctionBuilder<'a>
 	{
 		let functionType = context.typeRef(&LlvmType::Function { returns: Box::new(self.returns.llvmType.clone()), parameters: self.parameters.iter().map(|ref functionParameter| functionParameter.llvmType.clone() ).collect(), hasVarArgs: self.hasVarArgs }).asLLVMTypeRef();
 		let functionReference = unsafe { LLVMAddFunction(module.reference, self.name.as_ptr(), functionType) };
@@ -136,31 +156,46 @@ impl FunctionDeclaration
 			unsafe { LLVMSetGC(functionReference, garbageCollectorStrategy.as_ptr()) };
 		}
 		
+		if let Some(personalityFunctionReference) = self.personalityFunctionReference
+		{
+			unsafe { LLVMSetPersonalityFn(functionReference, personalityFunctionReference.asLLVMValueRef()) };
+		}
+		
 		unsafe { LLVMSetLinkage(functionReference, self.linkage.to_LLVMLinkage()) };
 		
 		unsafe { LLVMSetVisibility(functionReference, self.visibility.to_LLVMVisibility()) };
+		
+		if let Some(section) = self.section.as_ref().map(String::as_str)
+		{
+			let cSection = CString::new(section).expect("section contains embedded NULLs");
+			unsafe { LLVMSetSection(functionReference, cSection.as_ptr()) };
+		}
 		
 		if let Some(ref dllStorageClass) = self.dllStorageClass
 		{
 			unsafe { LLVMSetDLLStorageClass(functionReference, dllStorageClass.to_LLVMDLLStorageClass()) };
 		}
 		
-		if let Some(unnamedAddress) = self.unnamedAddress
+		let HasUnnamedAddr = if self.hasUnnamedAddress
 		{
-			use self::UnnamedAddressAttribute::*;
-			
-			match unnamedAddress
-			{
-				UnnamedAddress => unsafe { LLVMSetUnnamedAddr(functionReference, 1) },
-				ModuleWideLocalUnnamedAddress => panic!("local unnamed address setting is not supported at this time for function declarations (we do not know which API call to use)"),
-			}
+			1
 		}
+		else
+		{
+			0
+		};
+		
+		unsafe { LLVMSetUnnamedAddr(functionReference, HasUnnamedAddr) };
 		
 		if let Some(alignment) = self.alignment
 		{
 			unsafe { LLVMSetAlignment(functionReference, alignment.as_u32()) };
 		}
 		
-		functionValue
+		FunctionBuilder
+		{
+			context,
+			functionValue,
+		}
 	}
 }

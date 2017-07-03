@@ -5,10 +5,12 @@
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum TypeBasedAliasAnalysisNode
 {
+	Root,
+	
 	Scalar
 	{
 		name: String,
-		parent: Option<Box<TypeBasedAliasAnalysisNode>>,
+		parent: Box<TypeBasedAliasAnalysisNode>,
 		isConstant: bool,
 	},
 	
@@ -29,6 +31,75 @@ pub enum TypeBasedAliasAnalysisNode
 
 impl TypeBasedAliasAnalysisNode
 {
+	pub fn toMetadataNode(&self) -> MetadataNode
+	{
+		use self::TypeBasedAliasAnalysisNode::*;
+		
+		match *self
+		{
+			Root =>
+			{
+				MetadataNode(vec!
+				[
+					MetadataKind::string("Simple C/C++ TBAA")
+				])
+			}
+			
+			Scalar { ref name, ref parent, ref isConstant } =>
+			{
+				let isConstant = if *isConstant
+				{
+					1
+				}
+				else
+				{
+					0
+				};
+				
+				MetadataNode(vec!
+				[
+					MetadataKind::string(name.as_str()),
+					MetadataKind::Node(parent.toMetadataNode()),
+					MetadataKind::Constant(Constant::integer64BitUnsigned(isConstant)),
+				])
+			}
+			
+			Struct { ref name, ref fields } =>
+			{
+				let mut values = Vec::with_capacity(1 + 2 * fields.len());
+				values.push(MetadataKind::String(name.to_owned()));
+				
+				for field in fields.iter()
+				{
+					values.push(MetadataKind::Node(field.kind.toMetadataNode()));
+					values.push(MetadataKind::Constant(Constant::integer64BitUnsigned(field.offset)));
+				}
+				
+				MetadataNode(values)
+			}
+			
+			Path { ref baseType, ref accessType, ref offsetIntoBaseType, ref isConstant } =>
+			{
+				let constantValue = if *isConstant
+				{
+					1
+				}
+				else
+				{
+					0
+				};
+				
+				MetadataNode(vec!
+				[
+					MetadataKind::Node(baseType.toMetadataNode()),
+					MetadataKind::Node(accessType.toMetadataNode()),
+					MetadataKind::Constant(Constant::integer64BitUnsigned(*offsetIntoBaseType)),
+					MetadataKind::Constant(Constant::integer64BitUnsigned(constantValue)),
+				])
+			}
+		}
+	}
+	
 	#[inline(always)]
 	pub fn asStructField(&self, offset: u64) -> TypeBasedAliasAnalysisNodeStructField
 	{
@@ -40,90 +111,12 @@ impl TypeBasedAliasAnalysisNode
 	}
 	
 	#[inline(always)]
-	pub fn toTypeBasedAliasAnalysisNodeValue(&self, context: &Context) -> TypeBasedAliasAnalysisNodeValue
-	{
-		use self::TypeBasedAliasAnalysisNode::*;
-		
-		TypeBasedAliasAnalysisNodeValue::fromLLVMValueRef
-		(
-			match *self
-			{
-				Scalar { ref name, ref parent, ref isConstant } =>
-				{
-					let parentX = if let &Some(ref parentY) = parent
-					{
-						parentY.toTypeBasedAliasAnalysisNodeValue(context).asLLVMValueRef()
-					}
-					else
-					{
-						context.metadataString("Simple C/C++ TBAA").asLLVMValueRef()
-					};
-					
-					let constantValue = if *isConstant
-					{
-						1
-					}
-					else
-					{
-						0
-					};
-					
-					let mut values =
-					[
-						context.metadataString(name).asLLVMValueRef(),
-						parentX,
-						context.constant(&Constant::integer64BitUnsigned(constantValue)).asLLVMValueRef(),
-					];
-					
-					unsafe { LLVMMDNodeInContext(context.reference, values.as_mut_ptr(), values.len() as u32) }
-				}
-				
-				Struct { ref name, ref fields } =>
-				{
-					let mut values = Vec::with_capacity(1 + 2 * fields.len());
-					values.push(context.metadataString(name).asLLVMValueRef());
-					
-					for field in fields.iter()
-					{
-						values.push(field.toTypeBasedAliasAnalysisNodeValue(context).asLLVMValueRef());
-						values.push(field.toConstantValue(context).asLLVMValueRef());
-					}
-					
-					unsafe { LLVMMDNodeInContext(context.reference, values.as_mut_ptr(), values.len() as u32) }
-				}
-				
-				Path { ref baseType, ref accessType, ref offsetIntoBaseType, ref isConstant } =>
-				{
-					let constantValue = if *isConstant
-					{
-						1
-					}
-					else
-					{
-						0
-					};
-					
-					let mut values =
-					[
-						baseType.toTypeBasedAliasAnalysisNodeValue(context).asLLVMValueRef(),
-						accessType.toTypeBasedAliasAnalysisNodeValue(context).asLLVMValueRef(),
-						context.constant(&Constant::integer64BitUnsigned(*offsetIntoBaseType)).asLLVMValueRef(),
-						context.constant(&Constant::integer64BitUnsigned(constantValue)).asLLVMValueRef(),
-					];
-					
-					unsafe { LLVMMDNodeInContext(context.reference, values.as_mut_ptr(), values.len() as u32) }
-				}
-			}
-		)
-	}
-	
-	#[inline(always)]
 	pub fn omnipotent_char() -> Self
 	{
 		TypeBasedAliasAnalysisNode::Scalar
 		{
 			name: "omnipotent char".to_owned(),
-			parent: None,
+			parent: Box::new(TypeBasedAliasAnalysisNode::Root),
 			isConstant: false,
 		}
 	}
@@ -134,7 +127,7 @@ impl TypeBasedAliasAnalysisNode
 		TypeBasedAliasAnalysisNode::Scalar
 		{
 			name: "short".to_owned(),
-			parent: Some(Box::new(Self::omnipotent_char())),
+			parent: Box::new(Self::omnipotent_char()),
 			isConstant: false,
 		}
 	}
@@ -145,7 +138,7 @@ impl TypeBasedAliasAnalysisNode
 		TypeBasedAliasAnalysisNode::Scalar
 		{
 			name: "int".to_owned(),
-			parent: Some(Box::new(Self::omnipotent_char())),
+			parent: Box::new(Self::omnipotent_char()),
 			isConstant: false,
 		}
 	}
@@ -156,7 +149,7 @@ impl TypeBasedAliasAnalysisNode
 		TypeBasedAliasAnalysisNode::Scalar
 		{
 			name: "long".to_owned(),
-			parent: Some(Box::new(Self::omnipotent_char())),
+			parent: Box::new(Self::omnipotent_char()),
 			isConstant: false,
 		}
 	}
@@ -167,7 +160,7 @@ impl TypeBasedAliasAnalysisNode
 		TypeBasedAliasAnalysisNode::Scalar
 		{
 			name: "long long".to_owned(),
-			parent: Some(Box::new(Self::omnipotent_char())),
+			parent: Box::new(Self::omnipotent_char()),
 			isConstant: false,
 		}
 	}
@@ -178,7 +171,7 @@ impl TypeBasedAliasAnalysisNode
 		TypeBasedAliasAnalysisNode::Scalar
 		{
 			name: "any pointer".to_owned(),
-			parent: Some(Box::new(Self::omnipotent_char())),
+			parent: Box::new(Self::omnipotent_char()),
 			isConstant: false,
 		}
 	}

@@ -21,7 +21,7 @@ impl FieldVariant
 			FieldVariant::Constant(ref constant) =>
 			{
 				unsafe { LLVMSetGlobalConstant(globalValue, 1) };
-				unsafe { LLVMSetInitializer(globalValue, constant.toConstantValue(context).asLLVMValueRef()) };
+				unsafe { LLVMSetInitializer(globalValue, constant.toReference(context).asLLVMValueRef()) };
 			}
 			
 			FieldVariant::Value(ref threadLocalMode, ref constant) =>
@@ -30,7 +30,7 @@ impl FieldVariant
 				
 				if let &Some(ref constant) = constant
 				{
-					unsafe { LLVMSetInitializer(globalValue, constant.toConstantValue(context).asLLVMValueRef()) };
+					unsafe { LLVMSetInitializer(globalValue, constant.toReference(context).asLLVMValueRef()) };
 				}
 				else
 				{

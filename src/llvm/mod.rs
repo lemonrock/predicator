@@ -10,6 +10,7 @@ use self::ir::*;
 use self::ir::attributes::*;
 use self::ir::attributes::enums::*;
 use self::ir::constants::*;
+use self::ir::metadata::*;
 use self::ir::typeBasedAliasAnalysis::*;
 use self::ir::types::*;
 use self::ir::values::*;

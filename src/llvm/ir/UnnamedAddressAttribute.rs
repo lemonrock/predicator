@@ -2,20 +2,9 @@
 // Copyright © 2017 The developers of mqtt. See the COPYRIGHT file in the top-level directory of this distribution and at https://raw.githubusercontent.com/lemonrock/mqtt/master/COPYRIGHT.
 
 
-use super::*;
-use ::std::fmt;
-use ::std::fmt::Debug;
-use ::std::fmt::Formatter;
-
-
-include!("ConstantValue.rs");
-include!("FunctionValue.rs");
-include!("FunctionParameterValue.rs");
-include!("GlobalValue.rs");
-include!("LLVMValueRefWrapper.rs");
-include!("MetadataNodeValue.rs");
-include!("MetadataStringValue.rs");
-include!("PointerValue.rs");
-include!("TerminatorValue.rs");
-include!("TypeBasedAliasAnalysisNodeValue.rs");
-include!("Value.rs");
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum UnnamedAddressAttribute
+{
+	UnnamedAddress,
+	ModuleWideLocalUnnamedAddress,
+}

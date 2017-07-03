@@ -12,11 +12,21 @@ pub struct FunctionParameter
 
 impl FunctionParameter
 {
+	pub fn void() -> Self
+	{
+		Self::simple(LlvmType::Void)
+	}
+	
 	pub fn boolean() -> Self
+	{
+		Self::simple(LlvmType::Int1)
+	}
+	
+	pub fn simple(llvmType: LlvmType) -> Self
 	{
 		Self
 		{
-			llvmType: LlvmType::Int1,
+			llvmType: llvmType,
 			alignment: None,
 			attributes: hashset!
 			{
@@ -40,7 +50,7 @@ impl FunctionParameter
 		{
 			llvmType: LlvmType::pointer(llvmType.clone()),
 			alignment: None,
-			attributes:attributes,
+			attributes: attributes,
 		}
 	}
 }

@@ -2,7 +2,7 @@
 // Copyright © 2017 The developers of predicator. See the COPYRIGHT file in the top-level directory of this distribution and at https://raw.githubusercontent.com/lemonrock/predicator/master/COPYRIGHT.
 
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone)]
 pub struct ModuleDefinition
 {
 	pub name: String,
@@ -11,6 +11,7 @@ pub struct ModuleDefinition
 	pub targetMachineDataLayout: TargetMachineDataLayout,
 	pub inlineAssembler: Option<String>,
 	pub fieldDefinitions: Vec<FieldDefinition>,
+	pub metadata: HashMap<String, MetadataNode>,
 }
 
 impl ModuleDefinition
@@ -30,6 +31,10 @@ impl ModuleDefinition
 				targetMachineDataLayout: targetMachineDataLayout,
 				inlineAssembler: None,
 				fieldDefinitions: fieldDefinitions,
+				metadata: hashmap!
+				{
+					"llvm.ident".to_owned() => MetadataNode::string("clang version 4.0.0 (tags/RELEASE_400/final)"),
+				}
 			}
 		)
 	}
@@ -43,6 +48,11 @@ impl ModuleDefinition
 		for fieldDefinition in self.fieldDefinitions.iter()
 		{
 			fields.insert(fieldDefinition.name.clone(), module.addField(context, fieldDefinition));
+		}
+		
+		for (key, metadata) in self.metadata.iter()
+		{
+			module.addMetadata(context, key, metadata);
 		}
 		
 		Ok((module, fields))

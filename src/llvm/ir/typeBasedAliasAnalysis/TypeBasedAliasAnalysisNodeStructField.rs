@@ -5,21 +5,6 @@
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct TypeBasedAliasAnalysisNodeStructField
 {
-	kind: TypeBasedAliasAnalysisNode,
-	offset: u64,
-}
-
-impl TypeBasedAliasAnalysisNodeStructField
-{
-	#[inline(always)]
-	fn toTypeBasedAliasAnalysisNodeValue(&self, context: &Context) -> TypeBasedAliasAnalysisNodeValue
-	{
-		self.kind.toTypeBasedAliasAnalysisNodeValue(context)
-	}
-	
-	#[inline(always)]
-	fn toConstantValue(&self, context: &Context) -> ConstantValue
-	{
-		context.constant(&Constant::integer64BitUnsigned(self.offset))
-	}
+	pub(crate) kind: TypeBasedAliasAnalysisNode,
+	pub(crate) offset: u64,
 }
