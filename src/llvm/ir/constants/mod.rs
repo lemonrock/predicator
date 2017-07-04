@@ -6,3 +6,8 @@ use super::*;
 
 
 include!("Constant.rs");
+include!("BinaryOperation.rs");
+include!("NullaryTypeOperation.rs");
+include!("TernaryOperation.rs");
+include!("UnaryOperation.rs");
+include!("UnaryTypeOperation.rs");

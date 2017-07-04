@@ -100,13 +100,37 @@ impl<'a> BasicBlockBuilder<'a>
 		self.builder.load(arrayPointer, Some(PowerOfTwoThirtyTwoBit::_8), Some(TypeBasedAliasAnalysisNode::path(offsetIntoBaseType, from, to)))
 	}
 	
-	pub fn bitcastPointerToUnsignedCharPointer(&self, pointerValue: PointerValue) -> PointerValue
+	pub fn bitcastPointerToInt8Pointer(&self, pointerValue: PointerValue) -> PointerValue
 	{
-		self.builder.bitcastPointerToUnsignedCharPointer(pointerValue)
+		self.builder.bitcastPointerToInt8Pointer(pointerValue)
 	}
 	
 	pub fn getElementPointer_ArrayIndex(&self, pointerValue: PointerValue, arrayIndex: u64) -> PointerValue
 	{
 		self.builder.getElementPointer_ArrayIndex(pointerValue, arrayIndex)
+	}
+	
+	pub fn tailCallMemCpy64(&self, functionReference: FunctionValue, fromInt8PointerValue: PointerValue, toInt8PointerValue: PointerValue, numberOfBytesToCopy: u64, alignment: PowerOfTwoThirtyTwoBit, isVolatile: bool)
+	{
+		let arguments =
+		[
+			(toInt8PointerValue.asLLVMValueRefWrapper(), None),
+			(fromInt8PointerValue.asLLVMValueRefWrapper(), None),
+			(self.context.constant(&Constant::integer64BitUnsigned(numberOfBytesToCopy)).asLLVMValueRefWrapper(), None),
+			(self.context.constant(&Constant::integer32BitUnsigned(alignment.as_u32())).asLLVMValueRefWrapper(), None),
+			(self.context.constant(&Constant::boolean(isVolatile)).asLLVMValueRefWrapper(), None),
+		];
+		
+		self.builder.call(self.context, functionReference, BuilderTailCall::Tail, &HashSet::default(), UsefulLLVMCallConv::LLVMCCallConv, None, &arguments);
+		
+		//  For each group of three, the first operand gives the byte offset of a field in bytes, the second gives its size in bytes, and the third gives its tbaa tag
+		// TBAA tag is the from/to/offset/is-constant, ie !tbaa, ie TypeBasedAliasAnalysisNode::path(offsetIntoBaseType, from, to)
+		// !{
+		// i64 0, i64 4, !1,
+		// i64 8, i64 4, !2
+		// }
+//		xxx;
+//
+//		unsafe { LLVMSetMetadata(instruction.asLLVMValueRef(), self.context.metadataKind_tbaa_struct(), self.context.xxxx(typeBasedAliasAnalysisNode).asLLVMValueRef()) };
 	}
 }

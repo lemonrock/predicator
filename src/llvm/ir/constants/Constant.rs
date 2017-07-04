@@ -44,7 +44,78 @@ pub enum Constant
 		llvmType: LlvmType,
 		value: Vec<u8>,
 		appendAsciiNull: bool,
-	}
+	},
+	
+	UnaryOperation
+	{
+		value: Box<Constant>,
+		operation: UnaryOperation,
+	},
+	
+	BinaryOperation
+	{
+		leftHandSide: Box<Constant>,
+		rightHandSide: Box<Constant>,
+		operation: BinaryOperation,
+	},
+	
+	TernaryOperation
+	{
+		first: Box<Constant>,
+		second: Box<Constant>,
+		third: Box<Constant>,
+		operation: TernaryOperation,
+	},
+
+	NullaryTypeOperation
+	{
+		llvmType: LlvmType,
+		operation: NullaryTypeOperation,
+	},
+	
+	UnaryTypeOperation
+	{
+		value: Box<Constant>,
+		to: LlvmType,
+		operation: UnaryTypeOperation,
+	},
+	
+	IntegerComparison
+	{
+		leftHandSide: Box<Constant>,
+		rightHandSide: Box<Constant>,
+		predicate: UsefulLLVMIntPredicate,
+	},
+	
+	FloatComparison
+	{
+		leftHandSide: Box<Constant>,
+		rightHandSide: Box<Constant>,
+		predicate: UsefulLLVMRealPredicate,
+	},
+	
+	GetElementPointer
+	{
+		value: Box<Constant>,
+		indices: Vec<Constant>,
+		isInBounds: bool,
+	},
+	
+	InlineAssembler
+	{
+		llvmType: LlvmType,
+		assembler: String,
+		constraints: String,
+		hasSideEffects: bool,
+		isAlignStack: bool,
+	},
+	
+	/*
+	Unimplemented
+		LLVMValueRef LLVMConstExtractValue(LLVMValueRef AggConstant, unsigned *IdxList, unsigned NumIdx);
+		LLVMValueRef LLVMConstInsertValue(LLVMValueRef AggConstant, LLVMValueRef ElementValueConstant, unsigned *IdxList, unsigned NumIdx);
+		LLVMValueRef LLVMBlockAddress(LLVMValueRef F, LLVMBasicBlockRef BB);
+    */
 }
 
 impl ToReference<ConstantValue> for Constant
@@ -125,10 +196,76 @@ impl ToReference<ConstantValue> for Constant
 					
 					unsafe { LLVMConstString(value.as_ptr() as *const _, value.len() as u32, appendAsciiNull) }
 				}
+	
+				UnaryOperation { ref value, ref operation } => operation.operate(context, value),
+				
+				BinaryOperation { ref leftHandSide, ref rightHandSide, ref operation } => operation.operate(context, leftHandSide, rightHandSide),
+				
+				TernaryOperation { ref first, ref second, ref third, ref operation } => operation.operate(context, first, second, third),
+				
+				NullaryTypeOperation { ref llvmType, ref operation } => operation.operate(context, llvmType),
+				
+				UnaryTypeOperation { ref value, ref to, ref operation } => operation.operate(context, value, to),
+				
+				IntegerComparison { ref leftHandSide, ref rightHandSide, ref predicate } => unsafe { LLVMConstICmp(predicate.to_LLVMIntPredicate(), context.constant(leftHandSide).asLLVMValueRef(), context.constant(rightHandSide).asLLVMValueRef()) },
+				
+				FloatComparison { ref leftHandSide, ref rightHandSide, ref predicate } => unsafe { LLVMConstFCmp(predicate.to_LLVMRealPredicate(), context.constant(leftHandSide).asLLVMValueRef(), context.constant(rightHandSide).asLLVMValueRef()) },
+				
+				GetElementPointer { ref value, ref indices, ref isInBounds } =>
+				{
+					let valueRef = context.constant(value).asLLVMValueRef();
+					let mut indicesRef = Vec::with_capacity(indices.len());
+					for index in indices
+					{
+						indicesRef.push(context.constant(index).asLLVMValueRef());
+					}
+					
+					let length = indices.len() as u32;
+					
+					if *isInBounds
+					{
+						unsafe { LLVMConstInBoundsGEP(valueRef, indicesRef.as_mut_ptr(), length) }
+					}
+					else
+					{
+						unsafe { LLVMConstGEP(valueRef, indicesRef.as_mut_ptr(), length) }
+					}
+				},
+				
+				InlineAssembler { ref llvmType, ref assembler, ref constraints, ref hasSideEffects, ref isAlignStack } =>
+				{
+					let typeRef = context.typeRef(llvmType).asLLVMTypeRef();
+					
+					let assembler = CString::new(&assembler[..]).unwrap();
+					
+					let constraints = CString::new(&constraints[..]).unwrap();
+					
+					let hasSideEffects = if *hasSideEffects
+					{
+						0
+					}
+					else
+					{
+						1
+					};
+					
+					let isAlignStack = if *isAlignStack
+					{
+						0
+					}
+					else
+					{
+						1
+					};
+					
+					unsafe { LLVMConstInlineAsm(typeRef, assembler.as_ptr(), constraints.as_ptr(), hasSideEffects, isAlignStack) }
+				}
 			}
 		)
 	}
 }
+
+static ComparisonType: LlvmType = LlvmType::Int1;
 
 impl Constant
 {
@@ -152,6 +289,24 @@ impl Constant
 			Undefined { ref llvmType } => llvmType,
 			
 			ByteString { ref llvmType, .. } => llvmType,
+			
+			UnaryOperation { ref value, .. } => value.llvmType(),
+			
+			BinaryOperation { ref leftHandSide, .. } => leftHandSide.llvmType(),
+			
+			TernaryOperation { ref first, ref second, ref third, ref operation } => operation.llvmType(first, second, third),
+			
+			NullaryTypeOperation { ref llvmType, .. } => llvmType,
+			
+			UnaryTypeOperation { ref to, .. } => to,
+			
+			IntegerComparison { .. } => &ComparisonType,
+			
+			FloatComparison { .. } => &ComparisonType,
+			
+			GetElementPointer { .. } => unimplemented!(), // Should be possible to calculate by getting the integer value of self.value
+			
+			InlineAssembler { ref llvmType, .. } => llvmType,
 		}
 	}
 	
@@ -165,9 +320,22 @@ impl Constant
 	pub const False: Constant = Constant::Integer
 	{
 		llvmType: LlvmType::Int1,
-		value: 1,
+		value: 0,
 		signed: false,
 	};
+	
+	#[inline(always)]
+	pub fn boolean(value: bool) -> Self
+	{
+		if value
+		{
+			Self::True
+		}
+		else
+		{
+			Self::False
+		}
+	}
 	
 	#[inline(always)]
 	pub fn integer8BitUnsigned(value: u8) -> Self
@@ -349,6 +517,27 @@ impl Constant
 			llvmType: LlvmType::pointer(LlvmType::Int8),
 			value: value.into_bytes(),
 			appendAsciiNull: appendAsciiNull,
+		}
+	}
+	
+	#[inline(always)]
+	pub fn sizeOf(llvmType: LlvmType) -> Self
+	{
+		Constant::NullaryTypeOperation
+		{
+			llvmType: llvmType,
+			operation: NullaryTypeOperation::SizeOf,
+		}
+	}
+	
+	#[inline(always)]
+	pub fn bitCastTo(value: Constant, to: LlvmType) -> Self
+	{
+		Constant::UnaryTypeOperation
+		{
+			value: Box::new(value),
+			to: to,
+			operation: UnaryTypeOperation::BitCast,
 		}
 	}
 }

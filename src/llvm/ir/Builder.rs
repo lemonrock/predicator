@@ -105,10 +105,70 @@ impl<'a> Builder<'a>
 		LLVMValueRefWrapper::fromLLVMValueRef(instruction)
 	}
 	
-	fn bitcastPointerToUnsignedCharPointer(&self, pointerValue: PointerValue) -> PointerValue
+	fn bitcastPointerToInt8Pointer(&self, pointerValue: PointerValue) -> PointerValue
 	{
-		let unsignedCharPointer = LlvmType::pointer(LlvmType::Int8);
-		PointerValue::fromLLVMValueRef(unsafe { LLVMBuildBitCast(self.reference, pointerValue.asLLVMValueRef(), self.context.typeRef(&unsignedCharPointer).asLLVMTypeRef(), Self::EmptyName()) })
+		PointerValue::fromLLVMValueRef(unsafe { LLVMBuildBitCast(self.reference, pointerValue.asLLVMValueRef(), self.context.typeRef(&LlvmType::int8Pointer()).asLLVMTypeRef(), Self::EmptyName()) })
+	}
+	
+	fn call(&self, context: &Context, functionReference: FunctionValue, builderTailCall: BuilderTailCall, functionAttributes: &HashSet<FunctionAttribute>, callingConvention: UsefulLLVMCallConv, returns: Option<&CallParameter>, arguments: &[(LLVMValueRefWrapper, Option<&CallParameter>)]) -> LLVMValueRefWrapper
+	{
+		let mut llvmArguments = Vec::with_capacity(arguments.len());
+		
+		for argument in arguments.iter()
+		{
+			llvmArguments.push(argument.0.asLLVMValueRef())
+		}
+		
+		let instruction = unsafe { LLVMBuildCall(self.reference, functionReference.asLLVMValueRef(), llvmArguments.as_mut_ptr(), llvmArguments.len() as u32, Self::EmptyName()) };
+		
+		use self::BuilderTailCall::*;
+		match builderTailCall
+		{
+			Tail => unsafe { LLVMSetTailCall(instruction, 1) },
+			MustTail => panic!("MustTail isn't supported as the API isn't clear"),
+			NoTail => unsafe { LLVMSetTailCall(instruction, 0) },
+		}
+		
+		for functionAttribute in functionAttributes.iter()
+		{
+			unsafe { LLVMAddCallSiteAttribute(instruction, LLVMAttributeFunctionIndex, functionAttribute.toReference(context)) };
+		}
+		
+		unsafe { LLVMSetInstructionCallConv(instruction, callingConvention as u32) };
+		
+		if let Some(callParameter) = returns
+		{
+			if let Some(ref alignment) = callParameter.alignment
+			{
+				unsafe { LLVMSetInstrParamAlignment(instruction, LLVMAttributeReturnIndex, alignment.as_u32()) };
+			}
+			
+			for attribute in callParameter.attributes.iter()
+			{
+				unsafe { LLVMAddCallSiteAttribute(instruction, LLVMAttributeReturnIndex, attribute.toReference(context)) };
+			}
+		}
+		
+		let mut attributeIndex = 1;
+		for argument in arguments.iter()
+		{
+			if let Some(callParameter) = argument.1
+			{
+				if let Some(ref alignment) = callParameter.alignment
+				{
+					unsafe { LLVMSetInstrParamAlignment(instruction, attributeIndex, alignment.as_u32()) };
+				}
+				
+				for attribute in callParameter.attributes.iter()
+				{
+					unsafe { LLVMAddCallSiteAttribute(instruction, attributeIndex, attribute.toReference(context)) };
+				}
+			}
+			
+			attributeIndex += 1;
+		}
+		
+		LLVMValueRefWrapper::fromLLVMValueRef(instruction)
 	}
 	
 	#[inline(always)]

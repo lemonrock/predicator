@@ -10,6 +10,7 @@ pub struct Context
 	enumAttributeIdentifierCache: EnumAttributeIdentifierCache,
 	typeRefCache: ContextCache<LlvmType, LLVMTypeRefWrapper>,
 	constantCache: ContextCache<Constant, ConstantValue>,
+	callParameterAttributeCache: ContextCache<CallParameterAttribute, LLVMAttributeRef>,
 	functionAttributeCache: ContextCache<FunctionAttribute, LLVMAttributeRef>,
 	parameterAttributeCache: ContextCache<ParameterAttribute, LLVMAttributeRef>,
 	metadataStringCache: RefCell<HashMap<String, MetadataStringValue>>,
@@ -75,6 +76,7 @@ impl Context
 				enumAttributeIdentifierCache: enumAttributeIdentifierCache,
 				typeRefCache: ContextCache::default(),
 				constantCache: ContextCache::default(),
+				callParameterAttributeCache: ContextCache::default(),
 				functionAttributeCache: ContextCache::default(),
 				parameterAttributeCache: ContextCache::default(),
 				metadataStringCache: RefCell::new(HashMap::new()),
@@ -153,6 +155,11 @@ impl Context
 	pub fn metadataNode(&self, metadataNode: &MetadataNode) -> MetadataNodeValue
 	{
 		self.metadataNodeCache.getOrAdd(metadataNode, self)
+	}
+	
+	pub fn callParameterAttributeRef(&self, attribute: &CallParameterAttribute) -> LLVMAttributeRef
+	{
+		self.callParameterAttributeCache.getOrAdd(attribute, self)
 	}
 	
 	pub fn functionAttributeRef(&self, attribute: &FunctionAttribute) -> LLVMAttributeRef

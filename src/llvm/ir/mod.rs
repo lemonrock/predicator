@@ -28,6 +28,8 @@ pub mod values;
 include!("BasicBlockBuilder.rs");
 include!("Builder.rs");
 include!("BuilderSwitchInstruction.rs");
+include!("BuilderTailCall.rs");
+include!("CallParameter.rs");
 include!("FieldDefinition.rs");
 include!("FieldVariant.rs");
 include!("FunctionBuilder.rs");

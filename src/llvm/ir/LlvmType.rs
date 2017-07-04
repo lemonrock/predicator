@@ -122,6 +122,13 @@ impl ToReference<LLVMTypeRefWrapper> for LlvmType
 
 impl LlvmType
 {
+	#[inline(always)]
+	pub fn int8Pointer() -> Self
+	{
+		Self::pointer(LlvmType::Int8)
+	}
+	
+	#[inline(always)]
 	pub fn anonymousStruct(isPacked: bool, elements: Vec<LlvmType>) -> Self
 	{
 		LlvmType::Struct
@@ -132,6 +139,7 @@ impl LlvmType
 		}
 	}
 	
+	#[inline(always)]
 	pub fn namedStruct(name: &str, isPacked: bool, elements: Vec<LlvmType>) -> Self
 	{
 		LlvmType::Struct
@@ -142,6 +150,7 @@ impl LlvmType
 		}
 	}
 	
+	#[inline(always)]
 	pub fn pointer(of: LlvmType) -> Self
 	{
 		LlvmType::Pointer

@@ -7,6 +7,8 @@ use super::*;
 
 include!("UsefulLLVMCallConv.rs");
 include!("UsefulLLVMDLLStorageClass.rs");
+include!("UsefulLLVMIntPredicate.rs");
 include!("UsefulLLVMLinkage.rs");
+include!("UsefulLLVMRealPredicate.rs");
 include!("UsefulLLVMThreadLocalMode.rs");
 include!("UsefulLLVMVisibility.rs");
