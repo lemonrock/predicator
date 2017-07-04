@@ -109,7 +109,7 @@ impl FunctionDefinition
 	}
 	
 	#[inline(always)]
-	pub(crate) fn create<'a>(&self, context: &'a Context, module: &Module) -> FunctionBuilder<'a>
+	pub(crate) fn create(&self, context: &Context, module: &Module) -> FunctionValue
 	{
 		let functionType = context.typeRef(&LlvmType::Function { returns: Box::new(self.returns.llvmType.clone()), parameters: self.parameters.iter().map(|ref functionParameter| functionParameter.llvmType.clone() ).collect(), hasVarArgs: self.hasVarArgs }).asLLVMTypeRef();
 		let functionReference = unsafe { LLVMAddFunction(module.reference, self.name.as_ptr(), functionType) };
@@ -192,10 +192,6 @@ impl FunctionDefinition
 			unsafe { LLVMSetAlignment(functionReference, alignment.as_u32()) };
 		}
 		
-		FunctionBuilder
-		{
-			context,
-			functionValue,
-		}
+		functionValue
 	}
 }

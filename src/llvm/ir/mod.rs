@@ -31,7 +31,6 @@ include!("Builder.rs");
 include!("BuilderSwitchInstruction.rs");
 include!("BuilderTailCall.rs");
 include!("CallParameter.rs");
-include!("FunctionBuilder.rs");
 include!("FunctionDeclaration.rs");
 include!("FunctionDefinition.rs");
 include!("FunctionParameter.rs");

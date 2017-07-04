@@ -23,6 +23,7 @@ use ::libc::c_uint;
 use ::libc::c_void;
 use ::llvm_sys::analysis::*;
 use ::llvm_sys::bit_reader::*;
+use ::llvm_sys::bit_writer::*;
 use ::llvm_sys::core::*;
 use ::llvm_sys::execution_engine::LLVMCreateMCJITCompilerForModule;
 use ::llvm_sys::execution_engine::LLVMInitializeMCJITCompilerOptions;
@@ -40,12 +41,15 @@ use ::std::cell::RefCell;
 use ::std::collections::HashMap;
 use ::std::ffi::CStr;
 use ::std::ffi::CString;
+use ::std::io;
+use ::std::io::Write;
 use ::std::mem::uninitialized;
 use ::std::mem::size_of;
 use ::std::mem::zeroed;
 use ::std::ptr::null;
 use ::std::ptr::null_mut;
 use ::std::rc::Rc;
+use ::std::slice::from_raw_parts;
 
 
 pub mod ir;

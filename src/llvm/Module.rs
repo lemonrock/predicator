@@ -37,10 +37,16 @@ impl Module
 	#[inline(always)]
 	pub fn verify(self) -> Result<Self, String>
 	{
+		self.verifyReference().map(|_| self)
+	}
+	
+	#[inline(always)]
+	pub fn verifyReference(&self) -> Result<(), String>
+	{
 		let mut errorMessage = null_mut();
 		let boolean = unsafe { LLVMVerifyModule(self.reference, LLVMVerifierFailureAction::LLVMReturnStatusAction, &mut errorMessage) };
 		handle_boolean_and_error_message!(boolean, errorMessage, LLVMVerifyModule);
-		Ok(self)
+		Ok(())
 	}
 	
 	#[inline(always)]
@@ -73,7 +79,7 @@ impl Module
 	}
 	
 	#[inline(always)]
-	pub fn addFunctionDefinition<'a>(&self, context: &'a Context, functionDefinition: &FunctionDefinition) -> FunctionBuilder<'a>
+	pub fn addFunctionDefinition(&self, context: &Context, functionDefinition: &FunctionDefinition) -> FunctionValue
 	{
 		functionDefinition.create(context, self)
 	}
@@ -92,14 +98,35 @@ impl Module
 	}
 	
 	#[inline(always)]
-	pub fn addGlobalField(&self, context: &Context, globalfieldDefinition: &GlobalFieldDefinition) -> GlobalValue
+	pub fn addGlobalField(&self, context: &Context, globalFieldDefinition: &GlobalFieldDefinition) -> GlobalValue
 	{
-		globalfieldDefinition.create(context, self)
+		globalFieldDefinition.create(context, self)
 	}
 	
 	#[inline(always)]
 	pub fn dumpToStandardError(&self)
 	{
 		unsafe { LLVMDumpModule(self.reference) }
+	}
+	
+	#[inline(always)]
+	pub fn writeBitCodeToFile(&self, path: &CStr) -> Result<(), String>
+	{
+		let result = unsafe { LLVMWriteBitcodeToFile(self.reference, path.as_ptr()) };
+		if result == 0
+		{
+			Ok(())
+		}
+		else
+		{
+			Err(format!("Unknown failure '{:?}' writing bit code to file path {:?}", result, path))
+		}
+	}
+	
+	#[inline(always)]
+	pub fn writeBitCodeToMemoryBuffer<'a>(&self) -> MemoryBuffer<'a>
+	{
+		let reference = unsafe { LLVMWriteBitcodeToMemoryBuffer(self.reference) };
+		MemoryBuffer::fromReference(reference)
 	}
 }

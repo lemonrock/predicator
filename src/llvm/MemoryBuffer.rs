@@ -20,6 +20,16 @@ impl<'a> Drop for MemoryBuffer<'a>
 impl<'a> MemoryBuffer<'a>
 {
 	#[inline(always)]
+	pub fn fromReference(reference: LLVMMemoryBufferRef) -> Self
+	{
+		Self
+		{
+			reference: reference,
+			slice: None,
+		}
+	}
+	
+	#[inline(always)]
 	pub fn fromSlice(slice: &'a [u8]) -> Self
 	{
 		// "a\0"
@@ -62,5 +72,12 @@ impl<'a> MemoryBuffer<'a>
 	pub fn address(&self) -> *const c_char
 	{
 		unsafe { LLVMGetBufferStart(self.reference) }
+	}
+	
+	#[inline(always)]
+	pub fn write<W: Write>(&self, writer: &mut W) -> io::Result<()>
+	{
+		let buffer = unsafe { from_raw_parts(self.address() as *const u8, self.size()) };
+		writer.write_all(buffer)
 	}
 }

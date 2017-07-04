@@ -51,4 +51,10 @@ impl FunctionValue
 		unsafe { parameters.set_len(numberOfParameters) };
 		unsafe { transmute(parameters) }
 	}
+	
+	#[inline(always)]
+	pub fn createBasicBlock<'a, S: Into<String>>(self, context: &'a Context, name: S) -> BasicBlockBuilder<'a>
+	{
+		BasicBlockBuilder::createBasicBlock(name, context, self)
+	}
 }

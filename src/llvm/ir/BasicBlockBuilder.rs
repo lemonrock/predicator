@@ -13,9 +13,9 @@ pub struct BasicBlockBuilder<'a>
 impl<'a> BasicBlockBuilder<'a>
 {
 	#[inline(always)]
-	fn createBasicBlock(name: &str, context: &'a Context, functionValue: FunctionValue) -> BasicBlockBuilder<'a>
+	pub(crate) fn createBasicBlock<S: Into<String>>(name: S, context: &'a Context, functionValue: FunctionValue) -> BasicBlockBuilder<'a>
 	{
-		let name = CString::new(name.as_bytes()).unwrap();
+		let name = CString::new(name.into().as_bytes()).unwrap();
 		let basicBlockReference = unsafe { LLVMAppendBasicBlockInContext(context.reference, functionValue.asLLVMValueRef(), name.as_ptr()) };
 		
 		let builder = context.builder();
@@ -34,15 +34,21 @@ impl<'a> BasicBlockBuilder<'a>
 	}
 	
 	#[inline(always)]
-	pub fn newBasicBlock(&self, to: &str) -> BasicBlockBuilder<'a>
+	pub fn newBasicBlock<S: Into<String>>(&self, name: S) -> BasicBlockBuilder<'a>
 	{
-		Self::createBasicBlock(to, self.context, self.functionValue)
+		Self::createBasicBlock(name, self.context, self.functionValue)
+	}
+	
+	#[inline(always)]
+	pub fn parameterAt(&self, index: usize) -> Option<FunctionParameterValue>
+	{
+		self.functionValue.parameterAt(index)
 	}
 	
 	#[inline(always)]
 	pub fn parameterAtAsPointer(&self, index: usize) -> Option<PointerValue>
 	{
-		self.functionValue.parameterAt(index).map(|functionParameterValue| PointerValue::fromLLVMValueRef(functionParameterValue.asLLVMValueRef()) )
+		self.parameterAt(index).map(|functionParameterValue| PointerValue::fromLLVMValueRef(functionParameterValue.asLLVMValueRef()) )
 	}
 	
 	#[inline(always)]
