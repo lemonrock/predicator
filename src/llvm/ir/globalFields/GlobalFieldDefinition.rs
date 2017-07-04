@@ -3,7 +3,7 @@
 
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct FieldDefinition
+pub struct GlobalFieldDefinition
 {
 	name: String,
 	addressSpace: u32,
@@ -14,11 +14,28 @@ pub struct FieldDefinition
 	dllStorageClass: Option<UsefulLLVMDLLStorageClass>,
 	hasUnnamedAddress: bool,
 	alignment: Option<PowerOfTwoThirtyTwoBit>,
-	fieldVariant: FieldVariant,
+	globalFieldVariant: GlobalFieldVariant,
 }
 
-impl FieldDefinition
+impl GlobalFieldDefinition
 {
+	pub fn internalConstant<S: Into<String>>(name: S, alignment: PowerOfTwoThirtyTwoBit, value: Constant) -> Self
+	{
+		Self
+		{
+			name: name.into(),
+			addressSpace: 0,
+			llvmType: value.llvmType().clone(),
+			linkage: UsefulLLVMLinkage::LLVMInternalLinkage,
+			visibility: UsefulLLVMVisibility::LLVMDefaultVisibility,
+			section: None,
+			dllStorageClass: None,
+			hasUnnamedAddress: true,
+			alignment: Some(alignment),
+			globalFieldVariant: GlobalFieldVariant::Constant(value),
+		}
+	}
+	
 	pub fn create(&self, context: &Context, module: &Module) -> GlobalValue
 	{
 		let cName = CString::new(self.name.clone()).expect("name contains embedded NULLs");
@@ -58,7 +75,7 @@ impl FieldDefinition
 		
 		let globalValue = GlobalValue::fromLLVMValueRef(globalValue);
 		
-		self.fieldVariant.set(context, globalValue);
+		self.globalFieldVariant.set(context, globalValue);
 		
 		globalValue
 	}

@@ -10,13 +10,12 @@ pub struct ModuleDefinition
 	pub targetTriple: CString,
 	pub targetMachineDataLayout: TargetMachineDataLayout,
 	pub inlineAssembler: Option<String>,
-	pub fieldDefinitions: Vec<FieldDefinition>,
 	pub metadata: HashMap<String, MetadataNode>,
 }
 
 impl ModuleDefinition
 {
-	pub fn newForHost<S: Into<String> + Clone>(name: S, fieldDefinitions: Vec<FieldDefinition>) -> Result<Self, String>
+	pub fn newForHost<S: Into<String> + Clone>(name: S) -> Result<Self, String>
 	{
 		let targetTriple = Target::defaultTargetTriple();
 		let targetMachineDataLayout = Target::createHostTargetMachine()?.targetMachineDataLayout();
@@ -30,7 +29,6 @@ impl ModuleDefinition
 				targetTriple: targetTriple,
 				targetMachineDataLayout: targetMachineDataLayout,
 				inlineAssembler: None,
-				fieldDefinitions: fieldDefinitions,
 				metadata: hashmap!
 				{
 					"llvm.ident".to_owned() => MetadataNode::string("clang version 4.0.0 (tags/RELEASE_400/final)"),
@@ -40,21 +38,15 @@ impl ModuleDefinition
 	}
 	
 	#[inline(always)]
-	pub fn create(&self, context: &Context) -> Result<(Module, HashMap<String, GlobalValue>), String>
+	pub fn create(&self, context: &Context) -> Result<Module, String>
 	{
 		let module = context.createModule(&self.name, &self.identifier, &self.targetTriple, &self.targetMachineDataLayout, self.inlineAssembler.as_ref().map(String::as_str))?;
-		
-		let mut fields = HashMap::with_capacity(self.fieldDefinitions.len());
-		for fieldDefinition in self.fieldDefinitions.iter()
-		{
-			fields.insert(fieldDefinition.name.clone(), module.addField(context, fieldDefinition));
-		}
 		
 		for (key, metadata) in self.metadata.iter()
 		{
 			module.addMetadata(context, key, metadata);
 		}
 		
-		Ok((module, fields))
+		Ok(module)
 	}
 }

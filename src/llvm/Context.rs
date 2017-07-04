@@ -41,9 +41,9 @@ impl<Key: ToReference<Value> + Clone, Value: Copy> ContextCache<Key, Value>
 	{
 		{
 			let cache = &mut self.cache.borrow();
-			if let Some(extant) = cache.get(key)
+			if let Some(value) = cache.get(key)
 			{
-				return *extant;
+				return *value;
 			}
 		}
 		

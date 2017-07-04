@@ -18,6 +18,7 @@ use ::std::collections::HashSet;
 
 pub mod attributes;
 pub mod constants;
+pub mod globalFields;
 pub mod metadata;
 pub mod typeBasedAliasAnalysis;
 pub mod types;
@@ -30,8 +31,6 @@ include!("Builder.rs");
 include!("BuilderSwitchInstruction.rs");
 include!("BuilderTailCall.rs");
 include!("CallParameter.rs");
-include!("FieldDefinition.rs");
-include!("FieldVariant.rs");
 include!("FunctionBuilder.rs");
 include!("FunctionDeclaration.rs");
 include!("FunctionDefinition.rs");

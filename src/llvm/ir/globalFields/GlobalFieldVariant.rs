@@ -3,14 +3,14 @@
 
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum FieldVariant
+pub enum GlobalFieldVariant
 {
 	Constant(Constant),
 	
 	Value(UsefulLLVMThreadLocalMode, Option<Constant>),
 }
 
-impl FieldVariant
+impl GlobalFieldVariant
 {
 	fn set(&self, context: &Context, globalValue: GlobalValue)
 	{
@@ -18,19 +18,19 @@ impl FieldVariant
 		
 		match *self
 		{
-			FieldVariant::Constant(ref constant) =>
+			GlobalFieldVariant::Constant(ref constant) =>
 			{
 				unsafe { LLVMSetGlobalConstant(globalValue, 1) };
-				unsafe { LLVMSetInitializer(globalValue, constant.toReference(context).asLLVMValueRef()) };
+				unsafe { LLVMSetInitializer(globalValue, context.constant(constant).asLLVMValueRef()) };
 			}
 			
-			FieldVariant::Value(ref threadLocalMode, ref constant) =>
+			GlobalFieldVariant::Value(ref threadLocalMode, ref constant) =>
 			{
 				unsafe { LLVMSetGlobalConstant(globalValue, 0) };
 				
 				if let &Some(ref constant) = constant
 				{
-					unsafe { LLVMSetInitializer(globalValue, constant.toReference(context).asLLVMValueRef()) };
+					unsafe { LLVMSetInitializer(globalValue, context.constant(constant).asLLVMValueRef()) };
 				}
 				else
 				{

@@ -110,8 +110,15 @@ pub enum Constant
 		isAlignStack: bool,
 	},
 	
+	Global
+	{
+		llvmType: LlvmType,
+		value: GlobalValue,
+	}
+	
 	/*
 	Unimplemented
+		LLVMConstIntOfArbitraryPrecision() for 128-bit integers
 		LLVMValueRef LLVMConstExtractValue(LLVMValueRef AggConstant, unsigned *IdxList, unsigned NumIdx);
 		LLVMValueRef LLVMConstInsertValue(LLVMValueRef AggConstant, LLVMValueRef ElementValueConstant, unsigned *IdxList, unsigned NumIdx);
 		LLVMValueRef LLVMBlockAddress(LLVMValueRef F, LLVMBasicBlockRef BB);
@@ -142,7 +149,6 @@ impl ToReference<ConstantValue> for Constant
 						0
 					};
 					
-					// NOTE: Need to use LLVMConstIntOfArbitraryPrecision() for 128-bit integers
 					unsafe { LLVMConstInt(typeRef, *value, signed) }
 				}
 				
@@ -260,6 +266,8 @@ impl ToReference<ConstantValue> for Constant
 					
 					unsafe { LLVMConstInlineAsm(typeRef, assembler.as_ptr(), constraints.as_ptr(), hasSideEffects, isAlignStack) }
 				}
+				
+				Global { ref value, .. } => value.asLLVMValueRef(),
 			}
 		)
 	}
@@ -307,6 +315,8 @@ impl Constant
 			GetElementPointer { .. } => unimplemented!(), // Should be possible to calculate by getting the integer value of self.value
 			
 			InlineAssembler { ref llvmType, .. } => llvmType,
+			
+			Global { ref llvmType, .. } => llvmType,
 		}
 	}
 	
@@ -539,5 +549,27 @@ impl Constant
 			to: to,
 			operation: UnaryTypeOperation::BitCast,
 		}
+	}
+	
+	#[inline(always)]
+	pub fn addGlobalField<S: Into<String>>(context: &Context, module: &Module, name: S, alignment: PowerOfTwoThirtyTwoBit, value: Constant) -> Self
+	{
+		let llvmType = value.llvmType().clone();
+		
+		let field = GlobalFieldDefinition::internalConstant(name, alignment, value);
+		let globalValue = module.addGlobalField(context, &field);
+		Constant::Global
+		{
+			llvmType: LlvmType::pointer(llvmType),
+			value: globalValue,
+		}
+	}
+	
+	#[inline(always)]
+	pub fn addGlobalFieldAsInt8Pointer<S: Into<String>>(context: &Context, module: &Module, name: S, alignment: PowerOfTwoThirtyTwoBit, value: Constant) -> PointerValue
+	{
+		let globalConstant = Self::addGlobalField(context, module, name, alignment, value);
+		let x = Constant::bitCastTo(globalConstant, LlvmType::int8Pointer());
+		PointerValue::fromLLVMValueRef(context.constant(&x).asLLVMValueRef())
 	}
 }

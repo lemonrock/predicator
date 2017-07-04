@@ -92,9 +92,9 @@ impl Module
 	}
 	
 	#[inline(always)]
-	pub fn addField<'a>(&self, context: &'a Context, fieldDefinition: &FieldDefinition) -> GlobalValue
+	pub fn addGlobalField(&self, context: &Context, globalfieldDefinition: &GlobalFieldDefinition) -> GlobalValue
 	{
-		fieldDefinition.create(context, self)
+		globalfieldDefinition.create(context, self)
 	}
 	
 	#[inline(always)]

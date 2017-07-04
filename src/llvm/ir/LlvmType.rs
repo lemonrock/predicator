@@ -65,7 +65,7 @@ impl ToReference<LLVMTypeRefWrapper> for LlvmType
 				
 				Struct { ref name, ref isPacked, ref elements } =>
 				{
-					let mut ElementTypes: Vec<LLVMTypeRef> = elements.iter().map(|llvmType| llvmType.toReference(context).asLLVMTypeRef()).collect();
+					let mut ElementTypes: Vec<LLVMTypeRef> = elements.iter().map(|llvmType| context.typeRef(llvmType).asLLVMTypeRef()).collect();
 					
 					let Packed = if *isPacked
 					{
@@ -94,7 +94,7 @@ impl ToReference<LLVMTypeRefWrapper> for LlvmType
 				{
 					let ReturnType = returns.toReference(context).asLLVMTypeRef();
 					
-					let mut ParamTypes: Vec<LLVMTypeRef> = parameters.iter().map(|llvmType| llvmType.toReference(context).asLLVMTypeRef()).collect();
+					let mut ParamTypes: Vec<LLVMTypeRef> = parameters.iter().map(|llvmType| context.typeRef(llvmType).asLLVMTypeRef()).collect();
 					
 					let IsVarArg = if hasVarArgs
 					{
@@ -108,11 +108,11 @@ impl ToReference<LLVMTypeRefWrapper> for LlvmType
 					LLVMFunctionType(ReturnType, ParamTypes.as_mut_ptr(), ParamTypes.len() as c_uint, IsVarArg)
 				},
 				
-				Array { ref elementType, ref numberOfElements } => LLVMArrayType(elementType.toReference(context).asLLVMTypeRef(), *numberOfElements),
+				Array { ref elementType, ref numberOfElements } => LLVMArrayType(context.typeRef(elementType).asLLVMTypeRef(), *numberOfElements),
 				
-				Vector { ref elementType, ref numberOfElements } => LLVMVectorType(elementType.toReference(context).asLLVMTypeRef(), *numberOfElements),
+				Vector { ref elementType, ref numberOfElements } => LLVMVectorType(context.typeRef(elementType).asLLVMTypeRef(), *numberOfElements),
 				
-				Pointer { ref elementType, ref addressSpace } => LLVMPointerType(elementType.toReference(context).asLLVMTypeRef(), *addressSpace),
+				Pointer { ref elementType, ref addressSpace } => LLVMPointerType(context.typeRef(elementType).asLLVMTypeRef(), *addressSpace),
 			}
 		};
 		
