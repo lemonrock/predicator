@@ -114,7 +114,19 @@ pub enum Constant
 	{
 		llvmType: LlvmType,
 		value: GlobalValue,
-	}
+	},
+	
+	Array
+	{
+		llvmType: LlvmType,
+		values: Vec<Constant>,
+	},
+	
+	Vector
+	{
+		llvmType: LlvmType,
+		scalarValues: Vec<Constant>,
+	},
 	
 	/*
 	Unimplemented
@@ -268,6 +280,34 @@ impl ToReference<ConstantValue> for Constant
 				}
 				
 				Global { ref value, .. } => value.asLLVMValueRef(),
+				
+				Array { ref llvmType, ref values } =>
+				{
+					let typeRef = context.typeRef(llvmType).asLLVMTypeRef();
+					
+					let mut valuesRef = Vec::with_capacity(values.len());
+					for value in values
+					{
+						valuesRef.push(context.constant(value).asLLVMValueRef());
+					}
+					
+					let length = values.len() as u32;
+					
+					unsafe { LLVMConstArray(typeRef, valuesRef.as_mut_ptr(), length) }
+				}
+				
+				Vector { ref scalarValues, .. } =>
+				{
+					let mut valuesRef = Vec::with_capacity(scalarValues.len());
+					for value in scalarValues
+					{
+						valuesRef.push(context.constant(value).asLLVMValueRef());
+					}
+					
+					let length = scalarValues.len() as u32;
+					
+					unsafe { LLVMConstVector(valuesRef.as_mut_ptr(), length) }
+				}
 			}
 		)
 	}
@@ -317,6 +357,10 @@ impl Constant
 			InlineAssembler { ref llvmType, .. } => llvmType,
 			
 			Global { ref llvmType, .. } => llvmType,
+			
+			Array { ref llvmType, .. } => llvmType,
+			
+			Vector { ref llvmType, .. } => llvmType,
 		}
 	}
 	
@@ -527,6 +571,26 @@ impl Constant
 			llvmType: LlvmType::pointer(LlvmType::Int8),
 			value: value.into_bytes(),
 			appendAsciiNull: appendAsciiNull,
+		}
+	}
+	
+	#[inline(always)]
+	pub fn array(llvmType: LlvmType, values: Vec<Constant>) -> Self
+	{
+		Constant::Array
+		{
+			llvmType: llvmType,
+			values: values,
+		}
+	}
+	
+	#[inline(always)]
+	pub fn vector(llvmType: LlvmType, scalarValues: Vec<Constant>) -> Self
+	{
+		Constant::Vector
+		{
+			llvmType: llvmType,
+			scalarValues: scalarValues,
 		}
 	}
 	

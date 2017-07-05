@@ -100,10 +100,22 @@ impl<'a> BasicBlockBuilder<'a>
 		}
 	}
 	
-	pub fn loadFromReferencedStructField(&self, PointerValue: PointerValue, fieldIndex: u32, offsetIntoBaseType: u64, from: TypeBasedAliasAnalysisNode, to: TypeBasedAliasAnalysisNode) -> LLVMValueRefWrapper
+	fn loadFromReferencedStructField(&self, pointerValue: PointerValue, fieldIndex: u32, offsetIntoBaseType: u64, from: TypeBasedAliasAnalysisNode, to: TypeBasedAliasAnalysisNode, alignment: PowerOfTwoThirtyTwoBit) -> (LLVMValueRefWrapper, PointerValue)
 	{
-		let arrayPointer = self.builder.getElementPointer_PointerToStructToPointerToField(PointerValue, 0, fieldIndex);
-		self.builder.load(arrayPointer, Some(PowerOfTwoThirtyTwoBit::_8), Some(TypeBasedAliasAnalysisNode::path(offsetIntoBaseType, from, to)))
+		let arrayPointer = self.builder.getElementPointerPointerToStructToPointerToField(pointerValue, 0, fieldIndex);
+		let loadedPointer = self.builder.load(arrayPointer, Some(alignment), Some(TypeBasedAliasAnalysisNode::path(offsetIntoBaseType, from, to)));
+		(loadedPointer, arrayPointer)
+	}
+	
+	pub fn loadPointerFromReferencedStructField(&self, pointerValue: PointerValue, fieldIndex: u32, offsetIntoBaseType: u64, from: TypeBasedAliasAnalysisNode) -> (PointerValue, PointerValue)
+	{
+		let (loadedPointer, arrayPointer) = self.loadFromReferencedStructField(pointerValue, fieldIndex, offsetIntoBaseType, from, TypeBasedAliasAnalysisNode::any_pointer(), PowerOfTwoThirtyTwoBit::_8);
+		(PointerValue::fromLLVMValueRefWrapper(loadedPointer), arrayPointer)
+	}
+	
+	pub fn loadValueFromReferencedStructField(&self, pointerValue: PointerValue, fieldIndex: u32, offsetIntoBaseType: u64, from: TypeBasedAliasAnalysisNode, to: TypeBasedAliasAnalysisNode, valueAlignment: PowerOfTwoThirtyTwoBit) -> (LLVMValueRefWrapper, PointerValue)
+	{
+		self.loadFromReferencedStructField(pointerValue, fieldIndex, offsetIntoBaseType, from, to, valueAlignment)
 	}
 	
 	pub fn bitcastPointerToInt8Pointer(&self, pointerValue: PointerValue) -> PointerValue
@@ -111,9 +123,14 @@ impl<'a> BasicBlockBuilder<'a>
 		self.builder.bitcastPointerToInt8Pointer(pointerValue)
 	}
 	
-	pub fn getElementPointer_ArrayIndex(&self, pointerValue: PointerValue, arrayIndex: u64) -> PointerValue
+	pub fn getElementPointerAtArrayIndexConstant(&self, pointerValue: PointerValue, arrayIndexInt64: u64) -> PointerValue
 	{
-		self.builder.getElementPointer_ArrayIndex(pointerValue, arrayIndex)
+		self.getElementPointerAtArrayIndex(pointerValue, self.context.constant(&Constant::integer64BitUnsigned(arrayIndexInt64)).asLLVMValueRefWrapper())
+	}
+	
+	pub fn getElementPointerAtArrayIndex(&self, pointerValue: PointerValue, arrayIndexInt64: LLVMValueRefWrapper) -> PointerValue
+	{
+		self.builder.getElementPointerAtArrayIndex(pointerValue, arrayIndexInt64)
 	}
 	
 	pub fn tailCallMemCpy64(&self, functionReference: FunctionValue, fromInt8PointerValue: PointerValue, toInt8PointerValue: PointerValue, numberOfBytesToCopy: u64, alignment: PowerOfTwoThirtyTwoBit, isVolatile: bool)
@@ -138,5 +155,20 @@ impl<'a> BasicBlockBuilder<'a>
 //		xxx;
 //
 //		unsafe { LLVMSetMetadata(instruction.asLLVMValueRef(), self.context.metadataKind_tbaa_struct(), self.context.xxxx(typeBasedAliasAnalysisNode).asLLVMValueRef()) };
+	}
+	
+	pub fn addConstant(&self, leftHandSide: LLVMValueRefWrapper, rightHandSide: Constant) -> LLVMValueRefWrapper
+	{
+		self.add(leftHandSide, self.context.constant(&rightHandSide).asLLVMValueRefWrapper())
+	}
+	
+	pub fn add(&self, leftHandSide: LLVMValueRefWrapper, rightHandSide: LLVMValueRefWrapper) -> LLVMValueRefWrapper
+	{
+		self.builder.add(leftHandSide, rightHandSide)
+	}
+	
+	pub fn store(&self, into: PointerValue, value: LLVMValueRefWrapper, offsetIntoBaseType: u64, from: TypeBasedAliasAnalysisNode, to: TypeBasedAliasAnalysisNode, alignment: PowerOfTwoThirtyTwoBit) -> LLVMValueRefWrapper
+	{
+		self.builder.store(into, value, Some(alignment), Some(TypeBasedAliasAnalysisNode::path(offsetIntoBaseType, from, to)))
 	}
 }

@@ -187,4 +187,21 @@ impl TypeBasedAliasAnalysisNode
 			isConstant: false,
 		}
 	}
+	
+	#[inline(always)]
+	pub fn namedStruct<S: Into<String>>(name: S, fields: &[(TypeBasedAliasAnalysisNode, u64)]) -> Self
+	{
+		let mut structFields = Vec::with_capacity(fields.len());
+		
+		for &(ref kind, offset) in fields
+		{
+			structFields.push(kind.asStructField(offset));
+		}
+		
+		TypeBasedAliasAnalysisNode::Struct
+		{
+			name: name.into(),
+			fields: structFields,
+		}
+	}
 }

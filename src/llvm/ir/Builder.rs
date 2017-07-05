@@ -66,7 +66,7 @@ impl<'a> Builder<'a>
 		LLVM treats pointers to structs as if they were arrays
 		
 	*/
-	fn getElementPointer_PointerToStructToPointerToField(&self, arrayPointer: PointerValue, arrayIndex: u64, fieldIndex: u32) -> PointerValue
+	fn getElementPointerPointerToStructToPointerToField(&self, arrayPointer: PointerValue, arrayIndex: u64, fieldIndex: u32) -> PointerValue
 	{
 		let mut indices: [LLVMValueRef; 2] =
 		[
@@ -78,19 +78,36 @@ impl<'a> Builder<'a>
 		PointerValue::fromLLVMValueRef(x)
 	}
 	
-	fn getElementPointer_ArrayIndex(&self, arrayPointer: PointerValue, arrayIndex: u64) -> PointerValue
+	fn getElementPointerAtArrayIndex(&self, arrayPointer: PointerValue, arrayIndexInt64: LLVMValueRefWrapper) -> PointerValue
 	{
 		let mut indices =
 		[
-			self.context.constant(&Constant::integer64BitUnsigned(arrayIndex)).asLLVMValueRef(),
+			arrayIndexInt64.asLLVMValueRef(),
 		];
 		
 		PointerValue::fromLLVMValueRef(unsafe { LLVMBuildInBoundsGEP(self.reference, arrayPointer.asLLVMValueRef(), indices.as_mut_ptr(), indices.len() as u32, Self::EmptyName()) })
 	}
 	
-	fn load(&self, pointerValue: PointerValue, alignment: Option<PowerOfTwoThirtyTwoBit>, typeBasedAliasAnalysisNode: Option<TypeBasedAliasAnalysisNode>) -> LLVMValueRefWrapper
+	fn load(&self, from: PointerValue, alignment: Option<PowerOfTwoThirtyTwoBit>, typeBasedAliasAnalysisNode: Option<TypeBasedAliasAnalysisNode>) -> LLVMValueRefWrapper
 	{
-		let instruction = unsafe { LLVMBuildLoad(self.reference, pointerValue.asLLVMValueRef(), Self::EmptyName()) };
+		let instruction = unsafe { LLVMBuildLoad(self.reference, from.asLLVMValueRef(), Self::EmptyName()) };
+		
+		if let Some(alignment) = alignment
+		{
+			unsafe { LLVMSetAlignment(instruction, alignment.as_u32()) };
+		}
+		
+		if let Some(ref typeBasedAliasAnalysisNode) = typeBasedAliasAnalysisNode
+		{
+			unsafe { LLVMSetMetadata(instruction, self.context.metadataKind_tbaa(), self.context.typeBasedAliasAnalysisNode(typeBasedAliasAnalysisNode).asLLVMValueRef()) };
+		}
+		
+		LLVMValueRefWrapper::fromLLVMValueRef(instruction)
+	}
+	
+	fn store(&self, into: PointerValue, value: LLVMValueRefWrapper, alignment: Option<PowerOfTwoThirtyTwoBit>, typeBasedAliasAnalysisNode: Option<TypeBasedAliasAnalysisNode>) -> LLVMValueRefWrapper
+	{
+		let instruction = unsafe { LLVMBuildStore(self.reference, value.asLLVMValueRef(), into.asLLVMValueRef()) };
 		
 		if let Some(alignment) = alignment
 		{
@@ -169,6 +186,11 @@ impl<'a> Builder<'a>
 		}
 		
 		LLVMValueRefWrapper::fromLLVMValueRef(instruction)
+	}
+	
+	fn add(&self, leftHandSide: LLVMValueRefWrapper, rightHandSide: LLVMValueRefWrapper) -> LLVMValueRefWrapper
+	{
+		LLVMValueRefWrapper::fromLLVMValueRef(unsafe { LLVMBuildAdd(self.reference, leftHandSide.asLLVMValueRef(), rightHandSide.asLLVMValueRef(), Self::EmptyName()) })
 	}
 	
 	#[inline(always)]
