@@ -38,42 +38,30 @@ impl GlobalFieldDefinition
 	
 	pub fn create(&self, context: &Context, module: &Module) -> GlobalValue
 	{
-		let cName = CString::new(self.name.clone()).expect("name contains embedded NULLs");
+		let cName = CString::new(self.name.as_bytes()).expect("name contains embedded NULLs");
 		
-		let globalValue = unsafe { LLVMAddGlobalInAddressSpace(module.reference, context.typeRef(&self.llvmType).asLLVMTypeRef(), cName.as_ptr(), self.addressSpace) };
+		let globalValue = GlobalValue::fromLLVMValueRef(unsafe { LLVMAddGlobalInAddressSpace(module.reference, context.typeRef(&self.llvmType).asLLVMTypeRef(), cName.as_ptr(), self.addressSpace) });
 		
-		unsafe { LLVMSetLinkage(globalValue, self.linkage.to_LLVMLinkage()) };
+		globalValue.setLinkage(self.linkage.to_LLVMLinkage());
 		
-		unsafe { LLVMSetVisibility(globalValue, self.visibility.to_LLVMVisibility()) };
+		globalValue.setVisibility(self.visibility.to_LLVMVisibility());
 		
 		if let Some(section) = self.section.as_ref().map(String::as_str)
 		{
-			let cSection = CString::new(section).expect("section contains embedded NULLs");
-			unsafe { LLVMSetSection(globalValue, cSection.as_ptr()) };
+			globalValue.setSection(section);
 		}
 		
 		if let Some(ref dllStorageClass) = self.dllStorageClass
 		{
-			unsafe { LLVMSetDLLStorageClass(globalValue, dllStorageClass.to_LLVMDLLStorageClass()) };
+			globalValue.setDllStorageClass(dllStorageClass.to_LLVMDLLStorageClass());
 		}
 		
-		let HasUnnamedAddr = if self.hasUnnamedAddress
-		{
-			1
-		}
-		else
-		{
-			0
-		};
-		
-		unsafe { LLVMSetUnnamedAddr(globalValue, HasUnnamedAddr) };
+		globalValue.setHasUnnamedAddress(self.hasUnnamedAddress);
 		
 		if let Some(alignment) = self.alignment
 		{
-			unsafe { LLVMSetAlignment(globalValue, alignment.as_u32()) };
+			globalValue.setAlignment(alignment);
 		}
-		
-		let globalValue = GlobalValue::fromLLVMValueRef(globalValue);
 		
 		self.globalFieldVariant.set(context, globalValue);
 		

@@ -119,12 +119,14 @@ pub enum Constant
 	Array
 	{
 		llvmType: LlvmType,
+		elementLlvmType: LlvmType,
 		values: Vec<Constant>,
 	},
 	
 	Vector
 	{
 		llvmType: LlvmType,
+		elementLlvmType: LlvmType,
 		scalarValues: Vec<Constant>,
 	},
 	
@@ -281,9 +283,9 @@ impl ToReference<ConstantValue> for Constant
 				
 				Global { ref value, .. } => value.asLLVMValueRef(),
 				
-				Array { ref llvmType, ref values } =>
+				Array { ref elementLlvmType, ref values, .. } =>
 				{
-					let typeRef = context.typeRef(llvmType).asLLVMTypeRef();
+					let typeRef = context.typeRef(elementLlvmType).asLLVMTypeRef();
 					
 					let mut valuesRef = Vec::with_capacity(values.len());
 					for value in values
@@ -575,21 +577,23 @@ impl Constant
 	}
 	
 	#[inline(always)]
-	pub fn array(llvmType: LlvmType, values: Vec<Constant>) -> Self
+	pub fn array(elementLlvmType: LlvmType, values: Vec<Constant>) -> Self
 	{
 		Constant::Array
 		{
-			llvmType: llvmType,
+			llvmType: LlvmType::array(elementLlvmType.clone(), values.len() as u32),
+			elementLlvmType: elementLlvmType,
 			values: values,
 		}
 	}
 	
 	#[inline(always)]
-	pub fn vector(llvmType: LlvmType, scalarValues: Vec<Constant>) -> Self
+	pub fn vector(elementLlvmType: LlvmType, scalarValues: Vec<Constant>) -> Self
 	{
 		Constant::Vector
 		{
-			llvmType: llvmType,
+			llvmType: LlvmType::vector(elementLlvmType.clone(), scalarValues.len() as u32),
+			elementLlvmType: elementLlvmType,
 			scalarValues: scalarValues,
 		}
 	}
@@ -619,7 +623,6 @@ impl Constant
 	pub fn addGlobalField<S: Into<String>>(context: &Context, module: &Module, name: S, alignment: PowerOfTwoThirtyTwoBit, value: Constant) -> Self
 	{
 		let llvmType = value.llvmType().clone();
-		
 		let field = GlobalFieldDefinition::internalConstant(name, alignment, value);
 		let globalValue = module.addGlobalField(context, &field);
 		Constant::Global

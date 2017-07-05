@@ -151,6 +151,26 @@ impl LlvmType
 	}
 	
 	#[inline(always)]
+	pub fn array(of: LlvmType, numberOfElements: u32) -> Self
+	{
+		LlvmType::Array
+		{
+			elementType: Box::new(of),
+			numberOfElements: numberOfElements,
+		}
+	}
+	
+	#[inline(always)]
+	pub fn vector(of: LlvmType, numberOfElements: u32) -> Self
+	{
+		LlvmType::Vector
+		{
+			elementType: Box::new(of),
+			numberOfElements: numberOfElements,
+		}
+	}
+	
+	#[inline(always)]
 	pub fn pointer(of: LlvmType) -> Self
 	{
 		LlvmType::Pointer

@@ -14,35 +14,26 @@ impl GlobalFieldVariant
 {
 	fn set(&self, context: &Context, globalValue: GlobalValue)
 	{
-		let globalValue = globalValue.asLLVMValueRef();
-		
 		match *self
 		{
 			GlobalFieldVariant::Constant(ref constant) =>
 			{
-				unsafe { LLVMSetGlobalConstant(globalValue, 1) };
-				unsafe { LLVMSetInitializer(globalValue, context.constant(constant).asLLVMValueRef()) };
+				globalValue.setIsConstant();
+				
+				globalValue.setIsInternallyInitialized(context, constant);
 			}
 			
 			GlobalFieldVariant::Value(ref threadLocalMode, ref constant) =>
 			{
-				unsafe { LLVMSetGlobalConstant(globalValue, 0) };
+				globalValue.setIsVariable(threadLocalMode.to_LLVMThreadLocalMode());
 				
 				if let &Some(ref constant) = constant
 				{
-					unsafe { LLVMSetInitializer(globalValue, context.constant(constant).asLLVMValueRef()) };
+					globalValue.setIsInternallyInitialized(context, constant);
 				}
 				else
 				{
-					unsafe { LLVMSetExternallyInitialized(globalValue, 1) };
-				}
-				
-				unsafe { LLVMSetThreadLocalMode(globalValue, threadLocalMode.to_LLVMThreadLocalMode()) };
-				
-				match *threadLocalMode
-				{
-					UsefulLLVMThreadLocalMode::LLVMNotThreadLocal => (),
-					_ => unsafe { LLVMSetThreadLocal(globalValue, 1) }
+					globalValue.setIsExternallyInitialized();
 				}
 			}
 		}

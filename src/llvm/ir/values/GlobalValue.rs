@@ -19,3 +19,95 @@ impl Value for GlobalValue
 		self.0.asLLVMValueRef()
 	}
 }
+
+impl GlobalValue
+{
+	#[inline(always)]
+	pub fn setLinkage(&self, llvmLinkage: LLVMLinkage)
+	{
+		unsafe { LLVMSetLinkage(self.reference(), llvmLinkage) };
+	}
+	
+	#[inline(always)]
+	pub fn setVisibility(&self, llvmVisibility: LLVMVisibility)
+	{
+		unsafe { LLVMSetVisibility(self.reference(), llvmVisibility) };
+	}
+	
+	#[inline(always)]
+	pub fn setSection(&self, section: &str)
+	{
+		let cSection = CString::new(section).expect("section contains embedded NULLs");
+		unsafe { LLVMSetSection(self.reference(), cSection.as_ptr()) };
+	}
+	
+	#[inline(always)]
+	pub fn setDllStorageClass(&self, llvmDllStorageClass: LLVMDLLStorageClass)
+	{
+		unsafe { LLVMSetDLLStorageClass(self.reference(), llvmDllStorageClass) };
+	}
+	
+	#[inline(always)]
+	pub fn setHasUnnamedAddress(&self, hasUnnamedAddress: bool)
+	{
+		let HasUnnamedAddr = if hasUnnamedAddress
+		{
+			1
+		}
+		else
+		{
+			0
+		};
+		unsafe { LLVMSetUnnamedAddr(self.reference(), HasUnnamedAddr) };
+	}
+	
+	#[inline(always)]
+	pub fn setAlignment(&self, alignment: PowerOfTwoThirtyTwoBit)
+	{
+		unsafe { LLVMSetAlignment(self.reference(), alignment.as_u32()) };
+	}
+	
+	#[inline(always)]
+	pub fn setIsConstant(&self)
+	{
+		unsafe { LLVMSetGlobalConstant(self.reference(), 1) };
+	}
+	
+	#[inline(always)]
+	pub fn setIsVariable(&self, threadLocalMode: LLVMThreadLocalMode)
+	{
+		let reference = self.reference();
+		unsafe { LLVMSetGlobalConstant(reference, 0) };
+		match threadLocalMode
+		{
+			LLVMThreadLocalMode::LLVMNotThreadLocal => (),
+			_ => unsafe { LLVMSetThreadLocal(reference, 1) }
+		}
+		unsafe { LLVMSetThreadLocalMode(reference, threadLocalMode) };
+	}
+	
+	#[inline(always)]
+	pub fn setIsInternallyInitialized(&self, context: &Context, constantInitializer: &Constant)
+	{
+		unsafe { LLVMSetExternallyInitialized(self.reference(), 0) };
+		self.setInitializer(context, constantInitializer);
+	}
+	
+	#[inline(always)]
+	pub fn setIsExternallyInitialized(&self)
+	{
+		unsafe { LLVMSetExternallyInitialized(self.reference(), 1) };
+	}
+	
+	#[inline(always)]
+	fn setInitializer(&self, context: &Context, constantInitializer: &Constant)
+	{
+		unsafe { LLVMSetInitializer(self.reference(), context.constant(constantInitializer).asLLVMValueRef()) };
+	}
+	
+	#[inline(always)]
+	fn reference(&self) -> LLVMValueRef
+	{
+		(self.0).0
+	}
+}
