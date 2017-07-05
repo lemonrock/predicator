@@ -139,6 +139,15 @@ pub enum Constant
     */
 }
 
+impl ToLLVMValueRefWrapper for Constant
+{
+	#[inline(always)]
+	fn toLLVMValueRefWrapper(&self, context: &Context) -> LLVMValueRefWrapper
+	{
+		context.constant(self).asLLVMValueRefWrapper()
+	}
+}
+
 impl ToReference<ConstantValue> for Constant
 {
 	#[inline(always)]

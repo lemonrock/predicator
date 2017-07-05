@@ -13,6 +13,15 @@ impl Debug for LLVMValueRefWrapper
 	}
 }
 
+impl ToLLVMValueRefWrapper for LLVMValueRefWrapper
+{
+	#[inline(always)]
+	fn toLLVMValueRefWrapper(&self, _: &Context) -> LLVMValueRefWrapper
+	{
+		*self
+	}
+}
+
 impl LLVMValueRefWrapper
 {
 	#[inline(always)]

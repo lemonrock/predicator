@@ -10,7 +10,7 @@
 
 #[macro_use] extern crate cpp;
 extern crate libc;
-extern crate llvm_sys;
+pub extern crate llvm_sys;
 #[macro_use] extern crate maplit;
 extern crate rand;
 pub extern crate rust_extra;
