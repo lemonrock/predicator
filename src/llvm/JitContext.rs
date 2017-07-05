@@ -4,38 +4,68 @@
 
 pub struct JitContext<SR: SymbolResolver>
 {
-	context: Context,
-	orcJitStack: OrcJitStack,
+	reference: LLVMOrcJITStackRef,
+	dropWrapper: Rc<OrcJitStackDropWrapper>,
 	symbolResolver: SR,
 }
 
 impl<SR: SymbolResolver> JitContext<SR>
 {
-	pub fn new(symbolResolver: SR, context: Context) -> Result<Self, String>
+	pub fn new(symbolResolver: SR) -> Result<Self, String>
 	{
-		let orcJitStack = Target::createHostOrcJitStack()?;
+		let reference = Target::createHostOrcJitStack()?;
 		
 		Ok
 		(
 			Self
 			{
-				context: context,
-				orcJitStack: orcJitStack,
+				reference: reference,
+				dropWrapper: Rc::new(OrcJitStackDropWrapper(reference)),
 				symbolResolver: symbolResolver,
 			}
 		)
 	}
 	
-	pub fn loadPlugins(&self, moduleSourceCodeType: ModuleSourceCodeType, memoryBufferCreator: &MemoryBufferCreator) -> Result<ModuleInOrcJitStack, String>
+	pub fn loadPlugins(&self, moduleSourceCodeType: ModuleSourceCodeType, memoryBufferCreator: &MemoryBufferCreator, context: &Context) -> Result<ModuleInOrcJitStack, String>
 	{
-		let moduleContainingPlugin = moduleSourceCodeType.createVerifiedModule(&self.context, memoryBufferCreator)?;
+		let module = moduleSourceCodeType.createVerifiedModule(context, memoryBufferCreator)?;
 		
-		Ok(self.orcJitStack.eagerlyAddModule(&moduleContainingPlugin, Self::resolveSymbol, &self.symbolResolver as *const _ as *mut _))
+		Ok(self.loadPluginFromModule(&module))
+	}
+	
+	#[inline]
+	pub fn loadPluginFromModule(&self, module: &Module) -> ModuleInOrcJitStack
+	{
+		let reference = unsafe { LLVMOrcAddEagerlyCompiledIR(self.reference, module.reference, Self::resolveSymbol, self.symbolResolver()) };
+		ModuleInOrcJitStack
+		{
+			reference: reference,
+			orcJitStackReference: self.reference,
+			orcJitStackReferenceDropWrapper: self.dropWrapper.clone(),
+		}
+	}
+	
+	/// NOTE: The API for this doesn't appear in some versions of the documentation
+	#[inline]
+	pub fn loadPluginFromObjectFile(&self, objectFile: &ObjectFile) -> ModuleInOrcJitStack
+	{
+		let reference = unsafe { LLVMOrcAddObjectFile(self.reference, objectFile.reference, Self::resolveSymbol, self.symbolResolver()) };
+		ModuleInOrcJitStack
+		{
+			reference: reference,
+			orcJitStackReference: self.reference,
+			orcJitStackReferenceDropWrapper: self.dropWrapper.clone(),
+		}
 	}
 	
 	extern "C" fn resolveSymbol(symbolName: *const c_char, lookupContext: *mut c_void) -> u64
 	{
 		unsafe { &*(lookupContext as *mut SR) }.resolveSymbolAddress(unsafe { CStr::from_ptr(symbolName) })
+	}
+	
+	fn symbolResolver(&self) -> *mut c_void
+	{
+		&self.symbolResolver as *const _ as *mut _
 	}
 }
 

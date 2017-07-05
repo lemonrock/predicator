@@ -46,9 +46,9 @@ impl SuperContext
 	}
 	
 	#[inline(always)]
-	pub fn newJitContext<SR: SymbolResolver>(&self, symbolResolver: SR) -> Result<JitContext<SR>, String>
+	pub fn newJitContext<SR: SymbolResolver>(&self, symbolResolver: SR) -> Result<(JitContext<SR>, Context), String>
 	{
 		let context = self.newContext()?;
-		JitContext::new(symbolResolver, context)
+		JitContext::new(symbolResolver).map(|jitContext| (jitContext, context))
 	}
 }

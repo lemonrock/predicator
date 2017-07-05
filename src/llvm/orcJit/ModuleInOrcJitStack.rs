@@ -4,8 +4,9 @@
 
 pub struct ModuleInOrcJitStack
 {
-	reference: LLVMOrcModuleHandle,
-	orcJitStack: OrcJitStack,
+	pub(crate) reference: LLVMOrcModuleHandle,
+	pub(crate) orcJitStackReference: LLVMOrcJITStackRef,
+	#[allow(dead_code)] pub(crate) orcJitStackReferenceDropWrapper: Rc<OrcJitStackDropWrapper>,
 }
 
 impl Drop for ModuleInOrcJitStack
@@ -13,7 +14,7 @@ impl Drop for ModuleInOrcJitStack
 	#[inline(always)]
 	fn drop(&mut self)
 	{
-		unsafe { LLVMRemoveModule(self.orcJitStack.reference, self.reference) }
+		unsafe { LLVMOrcRemoveModule(self.orcJitStackReference, self.reference) }
 	}
 }
 
@@ -34,6 +35,12 @@ macro_rules! function_pointer
 			}
 		}
 	}
+}
+
+extern "C"
+{
+	// Incorrectly exposed by llvm-sys crate as LLVMRemoveModule!
+	pub fn LLVMOrcRemoveModule(JITStack: LLVMOrcJITStackRef, H: LLVMOrcModuleHandle);
 }
 
 impl ModuleInOrcJitStack
@@ -114,6 +121,6 @@ impl ModuleInOrcJitStack
 	{
 		let symbolNameCString = CString::new(symbolName).expect("Contains embedded NULs");
 		
-		unsafe { LLVMOrcGetSymbolAddress(self.orcJitStack.reference, symbolNameCString.as_ptr()) }
+		unsafe { LLVMOrcGetSymbolAddress(self.orcJitStackReference, symbolNameCString.as_ptr()) }
 	}
 }

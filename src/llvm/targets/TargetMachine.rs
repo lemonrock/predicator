@@ -32,7 +32,7 @@ impl TargetMachine
 	}
 	
 	#[inline(always)]
-	pub fn toOrcJitStack(mut self) -> Result<OrcJitStack, String>
+	pub fn toOrcJitStack(mut self) -> Result<LLVMOrcJITStackRef, String>
 	{
 		let orcJitStackReference = unsafe { LLVMOrcCreateInstance(self.reference) };
 		
@@ -44,15 +44,7 @@ impl TargetMachine
 		{
 			// orcJitStackReference takes internal ownership of self.reference
 			self.reference = null_mut();
-			
-			Ok
-			(
-				OrcJitStack
-				{
-					reference: orcJitStackReference,
-					dropWrapper: Rc::new(OrcJitStackDropWrapper(orcJitStackReference)),
-				}
-			)
+			Ok(orcJitStackReference)
 		}
 	}
 }

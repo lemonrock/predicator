@@ -6,17 +6,19 @@ pub struct BasicBlockBuilder<'a>
 {
 	context: &'a Context,
 	functionValue: FunctionValue,
-	pub basicBlockReference: LLVMBasicBlockRef,
-	pub builder: Builder<'a>,
+	basicBlockReference: LLVMBasicBlockRef,
+	builder: Builder<'a>,
+	name: String,
 }
 
 impl<'a> BasicBlockBuilder<'a>
 {
 	#[inline(always)]
-	pub(crate) fn createBasicBlock<S: Into<String>>(name: S, context: &'a Context, functionValue: FunctionValue) -> BasicBlockBuilder<'a>
+	pub(crate) fn createBasicBlock<S: Into<String> + Clone>(name: S, context: &'a Context, functionValue: FunctionValue) -> BasicBlockBuilder<'a>
 	{
-		let name = CString::new(name.into().as_bytes()).unwrap();
-		let basicBlockReference = unsafe { LLVMAppendBasicBlockInContext(context.reference, functionValue.asLLVMValueRef(), name.as_ptr()) };
+		let name = name.into();
+		let cName = CString::new(name.as_bytes()).unwrap();
+		let basicBlockReference = unsafe { LLVMAppendBasicBlockInContext(context.reference, functionValue.asLLVMValueRef(), cName.as_ptr()) };
 		
 		let builder = context.builder();
 		
@@ -26,6 +28,7 @@ impl<'a> BasicBlockBuilder<'a>
 			functionValue,
 			basicBlockReference,
 			builder,
+			name: name,
 		};
 		
 		this.builder.positionAtEndOfBasicBlock(this.basicBlockReference);
@@ -34,9 +37,9 @@ impl<'a> BasicBlockBuilder<'a>
 	}
 	
 	#[inline(always)]
-	pub fn newBasicBlock<S: Into<String>>(&self, name: S) -> BasicBlockBuilder<'a>
+	pub fn newBasicBlock<S: Into<String> + Clone>(&self, name: S) -> BasicBlockBuilder<'a>
 	{
-		Self::createBasicBlock(name, self.context, self.functionValue)
+		Self::createBasicBlock(format!("{}.{}", &self.name, name.into()), self.context, self.functionValue)
 	}
 	
 	#[inline(always)]
@@ -84,7 +87,7 @@ impl<'a> BasicBlockBuilder<'a>
 	}
 	
 	#[inline(always)]
-	pub fn conditionalBranch(self, ifCondition: LLVMValueRef, thenBlock: &BasicBlockBuilder<'a>, elseBlock: &BasicBlockBuilder<'a>)
+	pub fn conditionalBranch(self, ifCondition: ComparisonResultValue, thenBlock: &BasicBlockBuilder<'a>, elseBlock: &BasicBlockBuilder<'a>)
 	{
 		self.builder.conditionalBranch(ifCondition, thenBlock.basicBlockReference, elseBlock.basicBlockReference);
 	}
@@ -100,6 +103,7 @@ impl<'a> BasicBlockBuilder<'a>
 		}
 	}
 	
+	#[inline(always)]
 	fn loadFromReferencedStructField(&self, pointerValue: PointerValue, fieldIndex: u32, offsetIntoBaseType: u64, from: TypeBasedAliasAnalysisNode, to: TypeBasedAliasAnalysisNode, alignment: PowerOfTwoThirtyTwoBit) -> (LLVMValueRefWrapper, PointerValue)
 	{
 		let arrayPointer = self.builder.getElementPointerPointerToStructToPointerToField(pointerValue, 0, fieldIndex);
@@ -107,27 +111,32 @@ impl<'a> BasicBlockBuilder<'a>
 		(loadedPointer, arrayPointer)
 	}
 	
+	#[inline(always)]
 	pub fn loadPointerFromReferencedStructField(&self, pointerValue: PointerValue, fieldIndex: u32, offsetIntoBaseType: u64, from: TypeBasedAliasAnalysisNode) -> (PointerValue, PointerValue)
 	{
 		let (loadedPointer, arrayPointer) = self.loadFromReferencedStructField(pointerValue, fieldIndex, offsetIntoBaseType, from, TypeBasedAliasAnalysisNode::any_pointer(), PowerOfTwoThirtyTwoBit::_8);
 		(PointerValue::fromLLVMValueRefWrapper(loadedPointer), arrayPointer)
 	}
 	
+	#[inline(always)]
 	pub fn loadValueFromReferencedStructField(&self, pointerValue: PointerValue, fieldIndex: u32, offsetIntoBaseType: u64, from: TypeBasedAliasAnalysisNode, to: TypeBasedAliasAnalysisNode, valueAlignment: PowerOfTwoThirtyTwoBit) -> (LLVMValueRefWrapper, PointerValue)
 	{
 		self.loadFromReferencedStructField(pointerValue, fieldIndex, offsetIntoBaseType, from, to, valueAlignment)
 	}
 	
+	#[inline(always)]
 	pub fn bitcastPointerToInt8Pointer(&self, pointerValue: PointerValue) -> PointerValue
 	{
 		self.builder.bitcastPointerToInt8Pointer(pointerValue)
 	}
 	
+	#[inline(always)]
 	pub fn getElementPointerAtArrayIndexConstant(&self, pointerValue: PointerValue, arrayIndexInt64: u64) -> PointerValue
 	{
 		self.getElementPointerAtArrayIndex(pointerValue, self.context.constant(&Constant::integer64BitUnsigned(arrayIndexInt64)).asLLVMValueRefWrapper())
 	}
 	
+	#[inline(always)]
 	pub fn getElementPointerAtArrayIndex(&self, pointerValue: PointerValue, arrayIndexInt64: LLVMValueRefWrapper) -> PointerValue
 	{
 		self.builder.getElementPointerAtArrayIndex(pointerValue, arrayIndexInt64)
@@ -157,18 +166,33 @@ impl<'a> BasicBlockBuilder<'a>
 //		unsafe { LLVMSetMetadata(instruction.asLLVMValueRef(), self.context.metadataKind_tbaa_struct(), self.context.xxxx(typeBasedAliasAnalysisNode).asLLVMValueRef()) };
 	}
 	
+	#[inline(always)]
 	pub fn addConstant(&self, leftHandSide: LLVMValueRefWrapper, rightHandSide: Constant) -> LLVMValueRefWrapper
 	{
 		self.add(leftHandSide, self.context.constant(&rightHandSide).asLLVMValueRefWrapper())
 	}
 	
+	#[inline(always)]
 	pub fn add(&self, leftHandSide: LLVMValueRefWrapper, rightHandSide: LLVMValueRefWrapper) -> LLVMValueRefWrapper
 	{
 		self.builder.add(leftHandSide, rightHandSide)
 	}
 	
+	#[inline(always)]
 	pub fn store(&self, into: PointerValue, value: LLVMValueRefWrapper, offsetIntoBaseType: u64, from: TypeBasedAliasAnalysisNode, to: TypeBasedAliasAnalysisNode, alignment: PowerOfTwoThirtyTwoBit) -> LLVMValueRefWrapper
 	{
 		self.builder.store(into, value, Some(alignment), Some(TypeBasedAliasAnalysisNode::path(offsetIntoBaseType, from, to)))
+	}
+	
+	#[inline(always)]
+	pub fn isInteger16Zero<S: Into<String> + Clone>(&self, ifName: S, leftHandSide: LLVMValueRefWrapper) -> (ComparisonResultValue, BasicBlockBuilder<'a>, BasicBlockBuilder<'a>)
+	{
+		let ifName = ifName.into();
+		
+		let thenBlock = self.newBasicBlock(format!("{}.then", &ifName));
+		let elseBlock = self.newBasicBlock(format!("{}.else", &ifName));
+		let ifName = CString::new(format!("{}.{}.if", &self.name, &ifName)).unwrap();
+		
+		(self.builder.integerComparison(LLVMIntPredicate::LLVMIntEQ, leftHandSide, self.context.constant(&Constant::integer16BitUnsigned(0)).asLLVMValueRefWrapper(), Some(&ifName)), thenBlock, elseBlock)
 	}
 }

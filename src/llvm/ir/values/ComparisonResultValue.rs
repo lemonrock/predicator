@@ -2,39 +2,20 @@
 // Copyright © 2017 The developers of predicator. See the COPYRIGHT file in the top-level directory of this distribution and at https://raw.githubusercontent.com/lemonrock/predicator/master/COPYRIGHT.
 
 
-pub struct ObjectFile
-{
-	pub(crate) reference: LLVMObjectFileRef
-}
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct ComparisonResultValue(LLVMValueRefWrapper);
 
-impl Drop for ObjectFile
+impl Value for ComparisonResultValue
 {
 	#[inline(always)]
-	fn drop(&mut self)
+	fn fromLLVMValueRef(value: LLVMValueRef) -> Self
 	{
-		unsafe { LLVMDisposeObjectFile(self.reference) }
+		ComparisonResultValue(LLVMValueRefWrapper::fromLLVMValueRef(value))
 	}
-}
-
-impl ObjectFile
-{
+	
 	#[inline(always)]
-	pub fn create(memoryBuffer: &MemoryBuffer) -> Result<Self, ()>
+	fn asLLVMValueRef(&self) -> LLVMValueRef
 	{
-		let reference = unsafe { LLVMCreateObjectFile(memoryBuffer.reference) };
-		if reference.is_null()
-		{
-			Err(())
-		}
-		else
-		{
-			Ok
-			(
-				Self
-				{
-					reference: reference
-				}
-			)
-		}
+		self.0.asLLVMValueRef()
 	}
 }

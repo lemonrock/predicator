@@ -18,31 +18,37 @@ impl<'a> Drop for Builder<'a>
 
 impl<'a> Builder<'a>
 {
+	#[inline(always)]
 	fn positionAtEndOfBasicBlock(&self, basicBlockReference: LLVMBasicBlockRef)
 	{
 		unsafe { LLVMPositionBuilderAtEnd(self.reference, basicBlockReference) }
 	}
 	
-	pub fn returnVoid(&self) -> TerminatorValue
+	#[inline(always)]
+	fn returnVoid(&self) -> TerminatorValue
 	{
 		TerminatorValue::fromLLVMValueRef(unsafe { LLVMBuildRetVoid(self.reference) })
 	}
 	
-	pub fn returnValue(&self, value: &Constant) -> TerminatorValue
+	#[inline(always)]
+	fn returnValue(&self, value: &Constant) -> TerminatorValue
 	{
 		TerminatorValue::fromLLVMValueRef(unsafe { LLVMBuildRet(self.reference, self.context.constant(value).asLLVMValueRef()) })
 	}
 	
+	#[inline(always)]
 	fn unconditionalBranch(&self, to: LLVMBasicBlockRef) -> TerminatorValue
 	{
 		TerminatorValue::fromLLVMValueRef(unsafe { LLVMBuildBr(self.reference, to) })
 	}
 	
-	fn conditionalBranch(&self, ifConditional: LLVMValueRef, thenBlock: LLVMBasicBlockRef, elseBlock: LLVMBasicBlockRef) -> TerminatorValue
+	#[inline(always)]
+	fn conditionalBranch(&self, ifConditional: ComparisonResultValue, thenBlock: LLVMBasicBlockRef, elseBlock: LLVMBasicBlockRef) -> TerminatorValue
 	{
-		TerminatorValue::fromLLVMValueRef(unsafe { LLVMBuildCondBr(self.reference, ifConditional, thenBlock, elseBlock) })
+		TerminatorValue::fromLLVMValueRef(unsafe { LLVMBuildCondBr(self.reference, ifConditional.asLLVMValueRef(), thenBlock, elseBlock) })
 	}
 	
+	#[inline(always)]
 	fn switchBranch(&self, integerValueOrConstant: LLVMValueRef, defaultBlock: LLVMBasicBlockRef, caseBlocks: usize) -> BuilderSwitchInstruction<'a>
 	{
 		BuilderSwitchInstruction
@@ -66,6 +72,7 @@ impl<'a> Builder<'a>
 		LLVM treats pointers to structs as if they were arrays
 		
 	*/
+	#[inline(always)]
 	fn getElementPointerPointerToStructToPointerToField(&self, arrayPointer: PointerValue, arrayIndex: u64, fieldIndex: u32) -> PointerValue
 	{
 		let mut indices: [LLVMValueRef; 2] =
@@ -78,6 +85,7 @@ impl<'a> Builder<'a>
 		PointerValue::fromLLVMValueRef(x)
 	}
 	
+	#[inline(always)]
 	fn getElementPointerAtArrayIndex(&self, arrayPointer: PointerValue, arrayIndexInt64: LLVMValueRefWrapper) -> PointerValue
 	{
 		let mut indices =
@@ -88,6 +96,7 @@ impl<'a> Builder<'a>
 		PointerValue::fromLLVMValueRef(unsafe { LLVMBuildInBoundsGEP(self.reference, arrayPointer.asLLVMValueRef(), indices.as_mut_ptr(), indices.len() as u32, Self::EmptyName()) })
 	}
 	
+	#[inline(always)]
 	fn load(&self, from: PointerValue, alignment: Option<PowerOfTwoThirtyTwoBit>, typeBasedAliasAnalysisNode: Option<TypeBasedAliasAnalysisNode>) -> LLVMValueRefWrapper
 	{
 		let instruction = unsafe { LLVMBuildLoad(self.reference, from.asLLVMValueRef(), Self::EmptyName()) };
@@ -105,6 +114,7 @@ impl<'a> Builder<'a>
 		LLVMValueRefWrapper::fromLLVMValueRef(instruction)
 	}
 	
+	#[inline(always)]
 	fn store(&self, into: PointerValue, value: LLVMValueRefWrapper, alignment: Option<PowerOfTwoThirtyTwoBit>, typeBasedAliasAnalysisNode: Option<TypeBasedAliasAnalysisNode>) -> LLVMValueRefWrapper
 	{
 		let instruction = unsafe { LLVMBuildStore(self.reference, value.asLLVMValueRef(), into.asLLVMValueRef()) };
@@ -122,6 +132,7 @@ impl<'a> Builder<'a>
 		LLVMValueRefWrapper::fromLLVMValueRef(instruction)
 	}
 	
+	#[inline(always)]
 	fn bitcastPointerToInt8Pointer(&self, pointerValue: PointerValue) -> PointerValue
 	{
 		PointerValue::fromLLVMValueRef(unsafe { LLVMBuildBitCast(self.reference, pointerValue.asLLVMValueRef(), self.context.typeRef(&LlvmType::int8Pointer()).asLLVMTypeRef(), Self::EmptyName()) })
@@ -188,9 +199,22 @@ impl<'a> Builder<'a>
 		LLVMValueRefWrapper::fromLLVMValueRef(instruction)
 	}
 	
+	#[inline(always)]
 	fn add(&self, leftHandSide: LLVMValueRefWrapper, rightHandSide: LLVMValueRefWrapper) -> LLVMValueRefWrapper
 	{
 		LLVMValueRefWrapper::fromLLVMValueRef(unsafe { LLVMBuildAdd(self.reference, leftHandSide.asLLVMValueRef(), rightHandSide.asLLVMValueRef(), Self::EmptyName()) })
+	}
+	
+	#[inline(always)]
+	fn integerComparison(&self, operation: LLVMIntPredicate, leftHandSide: LLVMValueRefWrapper, rightHandSide: LLVMValueRefWrapper, name: Option<&CStr>) -> ComparisonResultValue
+	{
+		ComparisonResultValue::fromLLVMValueRef(unsafe{ LLVMBuildICmp(self.reference, operation, leftHandSide.asLLVMValueRef(), rightHandSide.asLLVMValueRef(), Self::nameOrEmptyName(name)) })
+	}
+	
+	#[inline(always)]
+	fn nameOrEmptyName(name: Option<&CStr>) -> *const i8
+	{
+		if let Some(name) = name { name.as_ptr() } else { Self::EmptyName() }
 	}
 	
 	#[inline(always)]

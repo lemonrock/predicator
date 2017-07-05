@@ -19,10 +19,10 @@ fn main()
 	let super_context = SuperContext::default();
 	
 	// There needs to be at least one context per thread
-	let jit_context = super_context.newJitContext(NaiveSymbolResolver(0)).expect("Could not create a new JIT context");
+	let (jit_context, context) = super_context.newJitContext(NaiveSymbolResolver(0)).expect("Could not create a new JIT context");
 	
 	// Can also be created from a slice, and from intermediate representation (.ll files)
-	let plugins = jit_context.loadPlugins(ModuleSourceCodeType::BitCode, &MemoryBufferCreator::File(&plugin_bit_code_file_path)).expect("Could not load plugin");
+	let plugins = jit_context.loadPlugins(ModuleSourceCodeType::BitCode, &MemoryBufferCreator::File(&plugin_bit_code_file_path), &context).expect("Could not load plugin");
 	
 	// Note that there is no way to know the correct arity or arguments for the function pointer
 	let sample_plugin_function_pointer = plugins.nullaryFunctionPointer::<*const i8>("sample_plugin").expect("Missing function for sample_plugin");

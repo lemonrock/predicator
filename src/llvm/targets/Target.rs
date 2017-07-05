@@ -11,11 +11,10 @@ pub struct Target
 
 impl Target
 {
-	pub fn createHostOrcJitStack() -> Result<OrcJitStack, String>
+	pub fn createHostOrcJitStack() -> Result<LLVMOrcJITStackRef, String>
 	{
 		let hostTargetMachine = Self::createHostTargetMachine()?;
-		let orcJitStack = hostTargetMachine.toOrcJitStack()?;
-		Ok(orcJitStack)
+		hostTargetMachine.toOrcJitStack()
 	}
 	
 	pub fn createHostTargetMachine() -> Result<TargetMachine, String>

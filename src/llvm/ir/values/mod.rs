@@ -8,6 +8,7 @@ use ::std::fmt::Debug;
 use ::std::fmt::Formatter;
 
 
+include!("ComparisonResultValue.rs");
 include!("ConstantValue.rs");
 include!("FunctionValue.rs");
 include!("FunctionParameterValue.rs");
