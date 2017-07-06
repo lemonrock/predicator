@@ -16,3 +16,12 @@ impl<T: Value> ToLLVMValueRefWrapper for T
 		self.asLLVMValueRefWrapper()
 	}
 }
+
+impl ToLLVMValueRefWrapper for u64
+{
+	#[inline(always)]
+	fn toLLVMValueRefWrapper(&self, context: &Context) -> LLVMValueRefWrapper
+	{
+		Constant::integer64BitUnsigned(*self).toLLVMValueRefWrapper(context)
+	}
+}

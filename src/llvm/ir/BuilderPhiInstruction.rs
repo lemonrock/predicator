@@ -2,16 +2,33 @@
 // Copyright © 2017 The developers of predicator. See the COPYRIGHT file in the top-level directory of this distribution and at https://raw.githubusercontent.com/lemonrock/predicator/master/COPYRIGHT.
 
 
-pub struct BuilderSwitchInstruction<'a>
+pub struct BuilderPhiInstruction<'a>
 {
-	switchInstruction: TerminatorValue,
+	phiInstruction: LLVMValueRefWrapper,
 	context: &'a Context
 }
 
-impl<'a> BuilderSwitchInstruction<'a>
+impl<'a> BuilderPhiInstruction<'a>
 {
-	pub fn addCase(&self, integerConstant: u8, block: LLVMBasicBlockRef)
+	#[inline(always)]
+	pub fn addPredecessor<V: ToLLVMValueRefWrapper>(&self, value: &V, block: &BasicBlockBuilder<'a>)
 	{
-		unsafe { LLVMAddCase(self.switchInstruction.asLLVMValueRef(), self.context.constant(&Constant::integer8BitUnsigned(integerConstant)).asLLVMValueRef(), block) };
+		let mut IncomingValues =
+		[
+			value.toLLVMValueRefWrapper(self.context).asLLVMValueRef(),
+		];
+		
+		let mut IncomingBlocks =
+		[
+			block.basicBlockReference,
+		];
+		
+		unsafe { LLVMAddIncoming(self.phiInstruction.asLLVMValueRef(), IncomingValues.as_mut_ptr(), IncomingBlocks.as_mut_ptr(), 1); }
+	}
+	
+	#[inline(always)]
+	pub fn value(&self) -> LLVMValueRefWrapper
+	{
+		self.phiInstruction
 	}
 }

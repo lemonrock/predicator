@@ -58,6 +58,18 @@ impl<'a> Builder<'a>
 		}
 	}
 	
+	#[inline(always)]
+	pub fn phi(&self, llvmType: &LlvmType) -> BuilderPhiInstruction
+	{
+		let reference = unsafe { LLVMBuildPhi(self.reference, self.context.typeRef(llvmType).asLLVMTypeRef(), Self::EmptyName()) };
+		
+		BuilderPhiInstruction
+		{
+			phiInstruction: LLVMValueRefWrapper::fromLLVMValueRef(reference),
+			context: self.context,
+		}
+	}
+	
 	/*
 		struct MyStruct
 		{

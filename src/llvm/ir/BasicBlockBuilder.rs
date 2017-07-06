@@ -98,6 +98,12 @@ impl<'a> BasicBlockBuilder<'a>
 	}
 	
 	#[inline(always)]
+	pub fn phi(&self, llvmType: &LlvmType) -> BuilderPhiInstruction
+	{
+		self.builder.phi(llvmType)
+	}
+	
+	#[inline(always)]
 	pub fn store(&self, into: PointerValue, value: LLVMValueRefWrapper, offsetIntoBaseType: u64, from: TypeBasedAliasAnalysisNode, to: TypeBasedAliasAnalysisNode, alignment: PowerOfTwoThirtyTwoBit) -> LLVMValueRefWrapper
 	{
 		self.builder.store(into, value, Some(alignment), Some(TypeBasedAliasAnalysisNode::path(offsetIntoBaseType, from, to)))
@@ -144,15 +150,9 @@ impl<'a> BasicBlockBuilder<'a>
 	}
 	
 	#[inline(always)]
-	pub fn getElementPointerAtArrayIndexConstant(&self, pointerValue: PointerValue, arrayIndexInt64: u64) -> PointerValue
+	pub fn getElementPointerAtArrayIndex<V: ToLLVMValueRefWrapper>(&self, pointerValue: PointerValue, arrayIndexInt64: V) -> PointerValue
 	{
-		self.getElementPointerAtArrayIndex(pointerValue, self.context.constant(&Constant::integer64BitUnsigned(arrayIndexInt64)).asLLVMValueRefWrapper())
-	}
-	
-	#[inline(always)]
-	pub fn getElementPointerAtArrayIndex(&self, pointerValue: PointerValue, arrayIndexInt64: LLVMValueRefWrapper) -> PointerValue
-	{
-		self.builder.getElementPointerAtArrayIndex(pointerValue, arrayIndexInt64)
+		self.builder.getElementPointerAtArrayIndex(pointerValue, arrayIndexInt64.toLLVMValueRefWrapper(self.context))
 	}
 	
 	pub fn tailCallMemCpy64(&self, functionReference: FunctionValue, fromInt8PointerValue: PointerValue, toInt8PointerValue: PointerValue, numberOfBytesToCopy: u64, alignment: PowerOfTwoThirtyTwoBit, isVolatile: bool)
@@ -195,5 +195,16 @@ impl<'a> BasicBlockBuilder<'a>
 		let ifName = CString::new(format!("{}.{}.if", &self.name, &ifName)).unwrap();
 		
 		(self.builder.integerComparison(predicate, leftHandSide.toLLVMValueRefWrapper(self.context), rightHandSide.toLLVMValueRefWrapper(self.context), Some(&ifName)), thenBlock, elseBlock)
+	}
+	
+	#[inline(always)]
+	pub fn ifIntegerGuard<S: Into<String> + Clone, LHS: ToLLVMValueRefWrapper, RHS: ToLLVMValueRefWrapper>(&self, ifName: S, leftHandSide: LHS, predicate: LLVMIntPredicate, rightHandSide: RHS) -> (ComparisonResultValue, BasicBlockBuilder<'a>)
+	{
+		let ifName = ifName.into();
+		
+		let carryOnBlock = self.newBasicBlock(format!("{}.carry-on", &ifName));
+		let ifName = CString::new(format!("{}.{}.if", &self.name, &ifName)).unwrap();
+		
+		(self.builder.integerComparison(predicate, leftHandSide.toLLVMValueRefWrapper(self.context), rightHandSide.toLLVMValueRefWrapper(self.context), Some(&ifName)), carryOnBlock)
 	}
 }

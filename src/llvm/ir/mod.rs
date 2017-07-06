@@ -28,6 +28,7 @@ pub mod values;
 
 include!("BasicBlockBuilder.rs");
 include!("Builder.rs");
+include!("BuilderPhiInstruction.rs");
 include!("BuilderSwitchInstruction.rs");
 include!("BuilderTailCall.rs");
 include!("CallParameter.rs");
