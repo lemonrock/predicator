@@ -17,6 +17,15 @@ impl<T: Value> ToLLVMValueRefWrapper for T
 	}
 }
 
+impl ToLLVMValueRefWrapper for u8
+{
+	#[inline(always)]
+	fn toLLVMValueRefWrapper(&self, context: &Context) -> LLVMValueRefWrapper
+	{
+		Constant::integer8BitUnsigned(*self).toLLVMValueRefWrapper(context)
+	}
+}
+
 impl ToLLVMValueRefWrapper for u64
 {
 	#[inline(always)]

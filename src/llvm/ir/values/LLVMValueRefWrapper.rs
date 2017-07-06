@@ -53,4 +53,10 @@ impl LLVMValueRefWrapper
 			true
 		}
 	}
+	
+	#[inline(always)]
+	pub fn asComparison(self) -> ComparisonResultValue
+	{
+		ComparisonResultValue::fromLLVMValueRefWrapper(self)
+	}
 }

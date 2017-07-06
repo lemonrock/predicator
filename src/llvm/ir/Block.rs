@@ -9,6 +9,7 @@ pub struct Block<'a>
 	pub(crate) basicBlockReference: LLVMBasicBlockRef,
 	builderReference: LLVMBuilderRef,
 	name: String,
+	nextChild: Cell<u64>,
 }
 
 impl<'a> Drop for Block<'a>
@@ -41,13 +42,17 @@ impl<'a> Block<'a>
 			basicBlockReference,
 			builderReference,
 			name,
+			nextChild: Cell::new(0),
 		}
 	}
 	
 	#[inline(always)]
-	pub fn child<S: Into<String> + Clone>(&self, name: S) -> Block<'a>
+	pub fn child(&self) -> Block<'a>
 	{
-		Self::create(format!("{}.{}", &self.name, name.into()), self.context, self.functionValue)
+		let nextChild = self.nextChild.get();
+		let name = format!("{}.{}", &self.name, nextChild);
+		self.nextChild.set(nextChild + 1);
+		Self::create(name, self.context, self.functionValue)
 	}
 	
 	#[inline(always)]
@@ -87,14 +92,21 @@ impl<'a> Block<'a>
 	}
 	
 	#[inline(always)]
+	pub fn unconditionalBranchToChild(&self) -> Block<'a>
+	{
+		let child = self.child();
+		self.unconditionalBranch(&child);
+		child
+	}
+	
+	#[inline(always)]
 	pub fn conditionalBranch(&self, ifCondition: ComparisonResultValue, thenBlock: &Block<'a>, elseBlock: &Block<'a>)
 	{
 		self.builderReference.conditionalBranch(ifCondition, thenBlock, elseBlock);
 	}
 	
 	#[inline(always)]
-	pub fn switchBranch<'b, V: ToLLVMValueRefWrapper, I: Iterator<Item=(&'b u8, &'b Block<'a>)> + ExactSizeIterator>(&self, switchOnValue: V, defaultBlock: &Block<'a>, caseBlocks: I)
-	where 'a : 'b
+	pub fn switchBranch<V: ToLLVMValueRefWrapper>(&self, switchOnValue: V, defaultBlock: &Block<'a>, caseBlocks: &[(u8, &'a Block<'a>)])
 	{
 		self.builderReference.switchBranch(self.context, self.toLLVMValueRefWrapper(switchOnValue), defaultBlock, caseBlocks);
 	}
@@ -112,9 +124,21 @@ impl<'a> Block<'a>
 	}
 	
 	#[inline(always)]
-	pub fn add<LHS: ToLLVMValueRefWrapper, RHS: ToLLVMValueRefWrapper>(&self, leftHandSide: LHS, rightHandSide: RHS) -> LLVMValueRefWrapper
+	pub fn arithmetic<LHS: ToLLVMValueRefWrapper, RHS: ToLLVMValueRefWrapper>(&self, leftHandSide: LHS, operation: BinaryArithmetic, rightHandSide: RHS) -> LLVMValueRefWrapper
 	{
-		self.builderReference.add(self.toLLVMValueRefWrapper(leftHandSide), self.toLLVMValueRefWrapper(rightHandSide), None)
+		operation.operate(self.builderReference, self.toLLVMValueRefWrapper(leftHandSide), self.toLLVMValueRefWrapper(rightHandSide), None)
+	}
+	
+	#[inline(always)]
+	pub fn invert<V: ToLLVMValueRefWrapper>(&self, operation: UnaryArithmetic, value: V) -> LLVMValueRefWrapper
+	{
+		operation.operate(self.builderReference, self.toLLVMValueRefWrapper(value), None)
+	}
+	
+	#[inline(always)]
+	pub fn increment<V: Value + Copy>(&self, original: V, increment: u64) -> LLVMValueRefWrapper
+	{
+		self.arithmetic(original, BinaryArithmetic::Add, increment)
 	}
 	
 	#[inline(always)]
@@ -142,26 +166,17 @@ impl<'a> Block<'a>
 	}
 	
 	#[inline(always)]
-	pub fn ifInteger<S: Into<String> + Clone, LHS: ToLLVMValueRefWrapper, RHS: ToLLVMValueRefWrapper>(&self, ifName: S, leftHandSide: LHS, predicate: LLVMIntPredicate, rightHandSide: RHS) -> (ComparisonResultValue, Block<'a>, Block<'a>)
+	pub fn comparison<LHS: ToLLVMValueRefWrapper, RHS: ToLLVMValueRefWrapper>(&self, leftHandSide: LHS, predicate: LLVMIntPredicate, rightHandSide: RHS) -> ComparisonResultValue
 	{
-		let ifName = ifName.into();
-		
-		let thenBlock = self.child(format!("{}.then", &ifName));
-		let elseBlock = self.child(format!("{}.else", &ifName));
-		let ifName = CString::new(format!("{}.{}.if", &self.name, &ifName)).unwrap();
-		
-		(self.builderReference.integerComparison(self.toLLVMValueRefWrapper(leftHandSide), predicate, self.toLLVMValueRefWrapper(rightHandSide), Some(&ifName)), thenBlock, elseBlock)
+		self.builderReference.integerComparison(self.toLLVMValueRefWrapper(leftHandSide), predicate, self.toLLVMValueRefWrapper(rightHandSide), None)
 	}
 	
 	#[inline(always)]
-	pub fn ifIntegerGuard<S: Into<String> + Clone, LHS: ToLLVMValueRefWrapper, RHS: ToLLVMValueRefWrapper>(&self, ifName: S, leftHandSide: LHS, predicate: LLVMIntPredicate, rightHandSide: RHS) -> (ComparisonResultValue, Block<'a>)
+	pub fn ifInteger<LHS: ToLLVMValueRefWrapper, RHS: ToLLVMValueRefWrapper>(&mut self, leftHandSide: LHS, predicate: LLVMIntPredicate, rightHandSide: RHS) -> (ComparisonResultValue, Block<'a>, Block<'a>)
 	{
-		let ifName = ifName.into();
-		
-		let carryOnBlock = self.child(format!("{}.carry-on", &ifName));
-		let ifName = CString::new(format!("{}.{}.if", &self.name, &ifName)).unwrap();
-		
-		(self.builderReference.integerComparison(self.toLLVMValueRefWrapper(leftHandSide), predicate, self.toLLVMValueRefWrapper(rightHandSide), Some(&ifName)), carryOnBlock)
+		let thenBlock = self.child();
+		let elseBlock = self.child();
+		(self.comparison(leftHandSide, predicate,rightHandSide), thenBlock, elseBlock)
 	}
 	
 	#[inline(always)]

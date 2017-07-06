@@ -23,17 +23,13 @@ pub(crate) trait Builder
 	fn conditionalBranch<'a>(self, ifConditional: ComparisonResultValue, thenBlock: &Block<'a>, elseBlock: &Block<'a>) -> TerminatorValue;
 	
 	#[inline(always)]
-	fn switchBranch<'a, 'b, V: Value, I: Iterator<Item=(&'b u8, &'b Block<'a>)> + ExactSizeIterator>(self, context: &Context, switchOnValue: V, defaultBlock: &Block<'a>, caseBlocks: I) -> TerminatorValue
-	where 'a : 'b;
+	fn switchBranch<'a, V: Value>(self, context: &Context, switchOnValue: V, defaultBlock: &Block<'a>, caseBlocks: &[(u8, &'a Block<'a>)]) -> TerminatorValue;
 	
 	#[inline(always)]
 	fn phi(self, typeReference: LLVMTypeRefWrapper, name: Option<&CStr>) -> PhiInstructionValue;
 	
 	#[inline(always)]
 	fn bitcastPointerToInt8Pointer(self, context: &Context, pointerValue: PointerValue, name: Option<&CStr>) -> PointerValue;
-	
-	#[inline(always)]
-	fn add<LHS: Value, RHS: Value>(self, leftHandSide: LHS, rightHandSide: RHS, name: Option<&CStr>) -> LLVMValueRefWrapper;
 	
 	#[inline(always)]
 	fn getElementPointerAtArrayIndex<ArrayIndex: Value>(self, arrayPointer: PointerValue, arrayIndexInt64: ArrayIndex, name: Option<&CStr>) -> PointerValue;
@@ -92,14 +88,13 @@ impl Builder for LLVMBuilderRef
 	}
 	
 	#[inline(always)]
-	fn switchBranch<'a, 'b, V: Value, I: Iterator<Item=(&'b u8, &'b Block<'a>)> + ExactSizeIterator>(self, context: &Context, switchOnValue: V, defaultBlock: &Block<'a>, caseBlocks: I) -> TerminatorValue
-	where 'a : 'b
+	fn switchBranch<'a, V: Value>(self, context: &Context, switchOnValue: V, defaultBlock: &Block<'a>, caseBlocks: &[(u8, &'a Block<'a>)]) -> TerminatorValue
 	{
 		let switchReference = unsafe { LLVMBuildSwitch(self, switchOnValue.asLLVMValueRef(), defaultBlock.basicBlockReference, caseBlocks.len() as u32) };
 		
-		for (constant, caseBlock) in caseBlocks
+		for &(constant, caseBlock) in caseBlocks
 		{
-			unsafe { LLVMAddCase(switchReference, context.constant(&Constant::integer8BitUnsigned(*constant)).asLLVMValueRef(), caseBlock.basicBlockReference) };
+			unsafe { LLVMAddCase(switchReference, context.constant(&Constant::integer8BitUnsigned(constant)).asLLVMValueRef(), caseBlock.basicBlockReference) };
 		}
 		
 		TerminatorValue::fromLLVMValueRef(switchReference)
@@ -115,12 +110,6 @@ impl Builder for LLVMBuilderRef
 	fn bitcastPointerToInt8Pointer(self, context: &Context, pointerValue: PointerValue, name: Option<&CStr>) -> PointerValue
 	{
 		PointerValue::fromLLVMValueRef(unsafe { LLVMBuildBitCast(self, pointerValue.asLLVMValueRef(), context.typeRef(&LlvmType::int8Pointer()).asLLVMTypeRef(), name.nameOrEmptyPointer()) })
-	}
-	
-	#[inline(always)]
-	fn add<LHS: Value, RHS: Value>(self, leftHandSide: LHS, rightHandSide: RHS, name: Option<&CStr>) -> LLVMValueRefWrapper
-	{
-		LLVMValueRefWrapper::fromLLVMValueRef(unsafe { LLVMBuildAdd(self, leftHandSide.asLLVMValueRef(), rightHandSide.asLLVMValueRef(), name.nameOrEmptyPointer()) })
 	}
 	
 	#[inline(always)]
