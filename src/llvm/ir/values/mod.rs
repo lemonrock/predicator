@@ -8,6 +8,7 @@ use ::std::fmt::Debug;
 use ::std::fmt::Formatter;
 
 
+include!("CallValue.rs");
 include!("ComparisonResultValue.rs");
 include!("ConstantValue.rs");
 include!("FunctionValue.rs");
@@ -16,6 +17,7 @@ include!("GlobalValue.rs");
 include!("LLVMValueRefWrapper.rs");
 include!("MetadataNodeValue.rs");
 include!("MetadataStringValue.rs");
+include!("PhiInstructionValue.rs");
 include!("PointerValue.rs");
 include!("TerminatorValue.rs");
 include!("TypeBasedAliasAnalysisNodeValue.rs");

@@ -2,26 +2,20 @@
 // Copyright © 2017 The developers of mqtt. See the COPYRIGHT file in the top-level directory of this distribution and at https://raw.githubusercontent.com/lemonrock/mqtt/master/COPYRIGHT.
 
 
-pub trait ToLLVMValueRefWrapper
-{
-	#[inline(always)]
-	fn toLLVMValueRefWrapper(&self, context: &Context) -> LLVMValueRefWrapper;
-}
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct CallValue(LLVMValueRefWrapper);
 
-impl<T: Value> ToLLVMValueRefWrapper for T
+impl Value for CallValue
 {
 	#[inline(always)]
-	default fn toLLVMValueRefWrapper(&self, _: &Context) -> LLVMValueRefWrapper
+	fn fromLLVMValueRef(value: LLVMValueRef) -> Self
 	{
-		self.asLLVMValueRefWrapper()
+		CallValue(LLVMValueRefWrapper::fromLLVMValueRef(value))
 	}
-}
-
-impl ToLLVMValueRefWrapper for u64
-{
+	
 	#[inline(always)]
-	fn toLLVMValueRefWrapper(&self, context: &Context) -> LLVMValueRefWrapper
+	fn asLLVMValueRef(&self) -> LLVMValueRef
 	{
-		Constant::integer64BitUnsigned(*self).toLLVMValueRefWrapper(context)
+		self.0.asLLVMValueRef()
 	}
 }

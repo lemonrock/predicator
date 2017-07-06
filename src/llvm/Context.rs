@@ -293,14 +293,8 @@ impl Context
 	}
 	
 	#[inline(always)]
-	pub fn builder<'a>(&'a self) -> Builder<'a>
+	pub(crate) fn builder(&self) -> LLVMBuilderRef
 	{
-		let reference = unsafe { LLVMCreateBuilderInContext(self.reference) };
-		
-		Builder
-		{
-			reference: reference,
-			context: self,
-		}
+		unsafe { LLVMCreateBuilderInContext(self.reference) }
 	}
 }

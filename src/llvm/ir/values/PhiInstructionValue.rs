@@ -2,55 +2,39 @@
 // Copyright © 2017 The developers of mqtt. See the COPYRIGHT file in the top-level directory of this distribution and at https://raw.githubusercontent.com/lemonrock/mqtt/master/COPYRIGHT.
 
 
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct LLVMValueRefWrapper(LLVMValueRef);
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct PhiInstructionValue(LLVMValueRefWrapper);
 
-impl Debug for LLVMValueRefWrapper
-{
-	fn fmt(&self, f: &mut Formatter) -> Result<(), fmt::Error>
-	{
-		write!(f, "LLVMValueRefWrapper({:?}={:?})", self.0, self.toString())
-	}
-}
-
-impl ToLLVMValueRefWrapper for LLVMValueRefWrapper
-{
-	#[inline(always)]
-	fn toLLVMValueRefWrapper(&self, _: &Context) -> LLVMValueRefWrapper
-	{
-		*self
-	}
-}
-
-impl Value for LLVMValueRefWrapper
+impl Value for PhiInstructionValue
 {
 	#[inline(always)]
 	fn fromLLVMValueRef(value: LLVMValueRef) -> Self
 	{
-		debug_assert!(!value.is_null(), "value is null pointer");
-		
-		LLVMValueRefWrapper(value)
+		PhiInstructionValue(LLVMValueRefWrapper::fromLLVMValueRef(value))
 	}
 	
 	#[inline(always)]
 	fn asLLVMValueRef(&self) -> LLVMValueRef
 	{
-		self.0
+		self.0.asLLVMValueRef()
 	}
 }
 
-impl LLVMValueRefWrapper
+impl PhiInstructionValue
 {
 	#[inline(always)]
-	pub fn isNull(&self) -> bool
+	pub fn addPredecessor<'a, V: Value>(&self, value: &V, block: &Block<'a>)
 	{
-		if unsafe { LLVMIsNull(self.asLLVMValueRef()) } == 0
-		{
-			false
-		}
-		else
-		{
-			true
-		}
+		let mut IncomingValues =
+		[
+			value.asLLVMValueRef(),
+		];
+		
+		let mut IncomingBlocks =
+		[
+			block.basicBlockReference,
+		];
+		
+		unsafe { LLVMAddIncoming(self.asLLVMValueRef(), IncomingValues.as_mut_ptr(), IncomingBlocks.as_mut_ptr(), 1); }
 	}
 }

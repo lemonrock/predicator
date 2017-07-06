@@ -2,26 +2,31 @@
 // Copyright © 2017 The developers of mqtt. See the COPYRIGHT file in the top-level directory of this distribution and at https://raw.githubusercontent.com/lemonrock/mqtt/master/COPYRIGHT.
 
 
-pub trait ToLLVMValueRefWrapper
+trait NameOrEmptyName
 {
 	#[inline(always)]
-	fn toLLVMValueRefWrapper(&self, context: &Context) -> LLVMValueRefWrapper;
-}
-
-impl<T: Value> ToLLVMValueRefWrapper for T
-{
+	fn nameOrEmptyPointer(self)-> *const i8;
+	
+	#[doc(hidden)]
 	#[inline(always)]
-	default fn toLLVMValueRefWrapper(&self, _: &Context) -> LLVMValueRefWrapper
+	fn emptyName() -> *const i8
 	{
-		self.asLLVMValueRefWrapper()
+		b"\0".as_ptr() as *const _
 	}
 }
 
-impl ToLLVMValueRefWrapper for u64
+impl<'a> NameOrEmptyName for Option<&'a CStr>
 {
 	#[inline(always)]
-	fn toLLVMValueRefWrapper(&self, context: &Context) -> LLVMValueRefWrapper
+	fn nameOrEmptyPointer(self)-> *const i8
 	{
-		Constant::integer64BitUnsigned(*self).toLLVMValueRefWrapper(context)
+		if let Some(name) = self
+		{
+			name.as_ptr()
+		}
+		else
+		{
+			Self::emptyName()
+		}
 	}
 }

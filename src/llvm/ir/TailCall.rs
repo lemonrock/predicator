@@ -3,7 +3,7 @@
 
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum BuilderTailCall
+pub enum TailCall
 {
 	Tail,
 	MustTail,

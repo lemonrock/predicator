@@ -3,6 +3,7 @@
 
 
 use super::*;
+use self::builder::*;
 use self::useful::*;
 use ::llvm_sys::*;
 use ::rust_extra::powersOfTwo::AsU32;
@@ -17,6 +18,7 @@ use ::std::collections::HashSet;
 
 
 pub mod attributes;
+pub mod builder;
 pub mod constants;
 pub mod globalFields;
 pub mod metadata;
@@ -26,17 +28,14 @@ pub mod useful;
 pub mod values;
 
 
-include!("BasicBlockBuilder.rs");
-include!("Builder.rs");
-include!("BuilderPhiInstruction.rs");
-include!("BuilderSwitchInstruction.rs");
-include!("BuilderTailCall.rs");
+include!("Block.rs");
 include!("CallParameter.rs");
 include!("FunctionDeclaration.rs");
 include!("FunctionDefinition.rs");
 include!("FunctionParameter.rs");
 include!("LlvmType.rs");
 include!("ModuleDefinition.rs");
+include!("TailCall.rs");
 include!("ToLLVMValueRefWrapper.rs");
 include!("ToReference.rs");
 include!("UnnamedAddressAttribute.rs");
