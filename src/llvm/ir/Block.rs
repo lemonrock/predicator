@@ -106,7 +106,7 @@ impl<'a> Block<'a>
 	}
 	
 	#[inline(always)]
-	pub fn switchBranch<V: ToLLVMValueRefWrapper>(&self, switchOnValue: V, defaultBlock: &Block<'a>, caseBlocks: &[(u8, &'a Block<'a>)])
+	pub fn switchBranch<V: ToLLVMValueRefWrapper>(&self, switchOnValue: V, defaultBlock: &Block<'a>, caseBlocks: &[(u8, LLVMBasicBlockRef)])
 	{
 		self.builderReference.switchBranch(self.context, self.toLLVMValueRefWrapper(switchOnValue), defaultBlock, caseBlocks);
 	}

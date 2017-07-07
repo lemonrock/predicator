@@ -23,7 +23,7 @@ pub(crate) trait Builder
 	fn conditionalBranch<'a>(self, ifConditional: ComparisonResultValue, thenBlock: &Block<'a>, elseBlock: &Block<'a>) -> TerminatorValue;
 	
 	#[inline(always)]
-	fn switchBranch<'a, V: Value>(self, context: &Context, switchOnValue: V, defaultBlock: &Block<'a>, caseBlocks: &[(u8, &'a Block<'a>)]) -> TerminatorValue;
+	fn switchBranch<'a, V: Value>(self, context: &Context, switchOnValue: V, defaultBlock: &Block<'a>, caseBlocks: &[(u8, LLVMBasicBlockRef)]) -> TerminatorValue;
 	
 	#[inline(always)]
 	fn phi(self, typeReference: LLVMTypeRefWrapper, name: Option<&CStr>) -> PhiInstructionValue;
@@ -88,13 +88,13 @@ impl Builder for LLVMBuilderRef
 	}
 	
 	#[inline(always)]
-	fn switchBranch<'a, V: Value>(self, context: &Context, switchOnValue: V, defaultBlock: &Block<'a>, caseBlocks: &[(u8, &'a Block<'a>)]) -> TerminatorValue
+	fn switchBranch<'a, V: Value>(self, context: &Context, switchOnValue: V, defaultBlock: &Block<'a>, caseBlocks: &[(u8, LLVMBasicBlockRef)]) -> TerminatorValue
 	{
 		let switchReference = unsafe { LLVMBuildSwitch(self, switchOnValue.asLLVMValueRef(), defaultBlock.basicBlockReference, caseBlocks.len() as u32) };
 		
 		for &(constant, caseBlock) in caseBlocks
 		{
-			unsafe { LLVMAddCase(switchReference, context.constant(&Constant::integer8BitUnsigned(constant)).asLLVMValueRef(), caseBlock.basicBlockReference) };
+			unsafe { LLVMAddCase(switchReference, context.constant(&Constant::integer8BitUnsigned(constant)).asLLVMValueRef(), caseBlock) };
 		}
 		
 		TerminatorValue::fromLLVMValueRef(switchReference)
