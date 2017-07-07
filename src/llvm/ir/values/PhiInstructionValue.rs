@@ -23,7 +23,7 @@ impl Value for PhiInstructionValue
 impl PhiInstructionValue
 {
 	#[inline(always)]
-	pub fn addPredecessor<'a, V: Value + Copy>(&self, value: V, block: &Block<'a>) -> &Self
+	pub fn addPredecessor<'a, V: Value + Copy>(self, value: V, block: &Block<'a>) -> Self
 	{
 		let mut IncomingValues =
 		[

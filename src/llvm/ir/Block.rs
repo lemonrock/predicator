@@ -172,7 +172,7 @@ impl<'a> Block<'a>
 	}
 	
 	#[inline(always)]
-	pub fn ifInteger<LHS: ToLLVMValueRefWrapper, RHS: ToLLVMValueRefWrapper>(&mut self, leftHandSide: LHS, predicate: LLVMIntPredicate, rightHandSide: RHS) -> (ComparisonResultValue, Block<'a>, Block<'a>)
+	pub fn ifInteger<LHS: ToLLVMValueRefWrapper, RHS: ToLLVMValueRefWrapper>(&self, leftHandSide: LHS, predicate: LLVMIntPredicate, rightHandSide: RHS) -> (ComparisonResultValue, Block<'a>, Block<'a>)
 	{
 		let thenBlock = self.child();
 		let elseBlock = self.child();
