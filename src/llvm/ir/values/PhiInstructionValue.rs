@@ -23,7 +23,7 @@ impl Value for PhiInstructionValue
 impl PhiInstructionValue
 {
 	#[inline(always)]
-	pub fn addPredecessor<'a, V: Value + Copy>(self, value: V, block: &Block<'a>) -> Self
+	pub fn addPredecessor<'a, V: Value>(self, value: V, block: &Block<'a>) -> Self
 	{
 		let mut IncomingValues =
 		[
@@ -32,7 +32,7 @@ impl PhiInstructionValue
 		
 		let mut IncomingBlocks =
 		[
-			block.basicBlockReference,
+			block.toLLVMBasicBlockRef(),
 		];
 		
 		unsafe { LLVMAddIncoming(self.asLLVMValueRef(), IncomingValues.as_mut_ptr(), IncomingBlocks.as_mut_ptr(), 1); };

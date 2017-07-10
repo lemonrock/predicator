@@ -6,10 +6,10 @@ pub struct Block<'a>
 {
 	context: &'a Context,
 	functionValue: FunctionValue,
-	pub(crate) basicBlockReference: LLVMBasicBlockRef,
+	basicBlockReference: LLVMBasicBlockRef,
 	builderReference: LLVMBuilderRef,
 	name: String,
-	nextChild: Cell<u64>,
+	nextValue: Cell<u64>,
 }
 
 impl<'a> Drop for Block<'a>
@@ -17,6 +17,15 @@ impl<'a> Drop for Block<'a>
 	fn drop(&mut self)
 	{
 		self.builderReference.dispose();
+	}
+}
+
+impl<'a> ToLLVMBasicBlockRef for Block<'a>
+{
+	#[inline(always)]
+	fn toLLVMBasicBlockRef(&self) -> LLVMBasicBlockRef
+	{
+		self.basicBlockReference
 	}
 }
 
@@ -42,17 +51,29 @@ impl<'a> Block<'a>
 			basicBlockReference,
 			builderReference,
 			name,
-			nextChild: Cell::new(0),
+			nextValue: Cell::new(0),
 		}
+	}
+	
+	#[inline(always)]
+	pub fn namedChild(&self, childName: &str) -> Block<'a>
+	{
+		Self::create(format!("{}.{}", &self.name, childName), self.context, self.functionValue)
 	}
 	
 	#[inline(always)]
 	pub fn child(&self) -> Block<'a>
 	{
-		let nextChild = self.nextChild.get();
+		Self::create(self.nextValueName(), self.context, self.functionValue)
+	}
+	
+	#[inline(always)]
+	fn nextValueName(&self) -> String
+	{
+		let nextChild = self.nextValue.get();
 		let name = format!("{}.{}", &self.name, nextChild);
-		self.nextChild.set(nextChild + 1);
-		Self::create(name, self.context, self.functionValue)
+		self.nextValue.set(nextChild + 1);
+		name
 	}
 	
 	#[inline(always)]
@@ -86,27 +107,27 @@ impl<'a> Block<'a>
 	}
 	
 	#[inline(always)]
-	pub fn unconditionalBranch(&self, to: &Block<'a>)
+	pub fn unconditionalBranch<ToBlockReference: ToLLVMBasicBlockRef>(&self, to: &ToBlockReference)
 	{
 		self.builderReference.unconditionalBranch(to);
 	}
 	
 	#[inline(always)]
-	pub fn unconditionalBranchToChild(&self) -> Block<'a>
+	pub fn unconditionalBranchToChild(&self, childName: &str) -> Block<'a>
 	{
-		let child = self.child();
+		let child = self.namedChild(childName);
 		self.unconditionalBranch(&child);
 		child
 	}
 	
 	#[inline(always)]
-	pub fn conditionalBranch(&self, ifCondition: ComparisonResultValue, thenBlock: &Block<'a>, elseBlock: &Block<'a>)
+	pub fn conditionalBranch<ThenToBlockReference: ToLLVMBasicBlockRef, ElseToBlockReference: ToLLVMBasicBlockRef>(&self, ifCondition: ComparisonResultValue, thenBlock: &ThenToBlockReference, elseBlock: &ElseToBlockReference)
 	{
 		self.builderReference.conditionalBranch(ifCondition, thenBlock, elseBlock);
 	}
 	
 	#[inline(always)]
-	pub fn switchBranch<V: ToLLVMValueRefWrapper>(&self, switchOnValue: V, defaultBlock: &Block<'a>, caseBlocks: &[(u8, LLVMBasicBlockRef)])
+	pub fn switchBranch<V: ToLLVMValueRefWrapper, DefaultToBlockReference: ToLLVMBasicBlockRef, CaseToBlockReference: ToLLVMBasicBlockRef>(&self, switchOnValue: V, defaultBlock: &DefaultToBlockReference, caseBlocks: Vec<(u8, CaseToBlockReference)>)
 	{
 		self.builderReference.switchBranch(self.context, self.toLLVMValueRefWrapper(switchOnValue), defaultBlock, caseBlocks);
 	}
@@ -136,21 +157,23 @@ impl<'a> Block<'a>
 	}
 	
 	#[inline(always)]
-	pub fn increment<V: Value + Copy>(&self, original: V, increment: u64) -> LLVMValueRefWrapper
+	pub fn increment<V: Value>(&self, original: V, increment: u64) -> LLVMValueRefWrapper
 	{
 		self.arithmetic(original, BinaryArithmetic::Add, increment)
 	}
 	
 	#[inline(always)]
-	pub fn getElementPointerAtArrayIndex<V: ToLLVMValueRefWrapper>(&self, pointerValue: PointerValue, arrayIndexInt64: V) -> PointerValue
+	pub fn getElementPointerAtArrayIndex<V: ToLLVMValueRefWrapper>(&self, named: &str, pointerValue: PointerValue, arrayIndexInt64: V) -> PointerValue
 	{
-		self.builderReference.getElementPointerAtArrayIndex(pointerValue, arrayIndexInt64.toLLVMValueRefWrapper(self.context), None)
+		let named = format!("{}_pointer_at_array_index", named);
+		self.builderReference.getElementPointerAtArrayIndex(pointerValue, arrayIndexInt64.toLLVMValueRefWrapper(self.context), Some(&CString::new(named).unwrap()))
 	}
 	
 	#[inline(always)]
-	pub fn pointerToStructField(&self, pointerValue: PointerValue, fieldIndex: u32) -> PointerValue
+	pub fn pointerToStructField(&self, named: &str, pointerValue: PointerValue, fieldIndex: u32) -> PointerValue
 	{
-		self.builderReference.getElementPointerAtArrayIndexFieldIndex(pointerValue, self.integer64BitUnsigned(0), self.integer32BitUnsigned(fieldIndex), None)
+		let named = format!("{}_pointer", named);
+		self.builderReference.getElementPointerAtArrayIndexFieldIndex(pointerValue, self.integer64BitUnsigned(0), self.integer32BitUnsigned(fieldIndex), Some(&CString::new(named).unwrap()))
 	}
 	
 	#[inline(always)]
@@ -160,9 +183,9 @@ impl<'a> Block<'a>
 	}
 	
 	#[inline(always)]
-	pub fn loadValue(&self, arrayPointer: PointerValue, offsetIntoBaseType: u64, from: TypeBasedAliasAnalysisNode, to: TypeBasedAliasAnalysisNode, alignment: PowerOfTwoThirtyTwoBit) -> LLVMValueRefWrapper
+	pub fn loadValue(&self, named: &str, arrayPointer: PointerValue, offsetIntoBaseType: u64, from: TypeBasedAliasAnalysisNode, to: TypeBasedAliasAnalysisNode, alignment: PowerOfTwoThirtyTwoBit) -> LLVMValueRefWrapper
 	{
-		self.builderReference.load(self.context, arrayPointer, Self::path(offsetIntoBaseType, from, to), Some(alignment), None)
+		self.builderReference.load(self.context, arrayPointer, Self::path(offsetIntoBaseType, from, to), Some(alignment), Some(&CString::new(named).unwrap()))
 	}
 	
 	#[inline(always)]
@@ -177,6 +200,14 @@ impl<'a> Block<'a>
 		let thenBlock = self.child();
 		let elseBlock = self.child();
 		(self.comparison(leftHandSide, predicate,rightHandSide), thenBlock, elseBlock)
+	}
+	
+	#[inline(always)]
+	pub fn ifFalseCarryOn<TrueToBlockReference: ToLLVMBasicBlockRef>(&self, isTrue: ComparisonResultValue, ifTrueBlock: &TrueToBlockReference) -> Block<'a>
+	{
+		let carryOnBlock = self.child();
+		self.conditionalBranch(isTrue, ifTrueBlock, &carryOnBlock);
+		carryOnBlock
 	}
 	
 	#[inline(always)]
@@ -205,24 +236,26 @@ impl<'a> Block<'a>
 	}
 	
 	#[inline(always)]
-	pub fn loadPointer(&self, arrayPointer: PointerValue, offsetIntoBaseType: u64, from: TypeBasedAliasAnalysisNode) -> PointerValue
+	pub fn loadPointer(&self, named: &str, arrayPointer: PointerValue, offsetIntoBaseType: u64, from: TypeBasedAliasAnalysisNode) -> PointerValue
 	{
-		PointerValue::fromLLVMValueRefWrapper(self.loadValue(arrayPointer, offsetIntoBaseType, from, TypeBasedAliasAnalysisNode::any_pointer(), Self::PointerAlignment))
+		PointerValue::fromLLVMValueRefWrapper(self.loadValue(named, arrayPointer, offsetIntoBaseType, from, TypeBasedAliasAnalysisNode::any_pointer(), Self::PointerAlignment))
 	}
 	
 	#[inline(always)]
-	pub fn loadValueFromReferencedStructField(&self, pointerValue: PointerValue, fieldIndex: u32, offsetIntoBaseType: u64, from: TypeBasedAliasAnalysisNode, to: TypeBasedAliasAnalysisNode, valueAlignment: PowerOfTwoThirtyTwoBit) -> (LLVMValueRefWrapper, PointerValue)
+	pub fn loadValueFromReferencedStructField(&self, named: &str, pointerValue: PointerValue, fieldIndex: u32, offsetIntoBaseType: u64, from: TypeBasedAliasAnalysisNode, to: TypeBasedAliasAnalysisNode, valueAlignment: PowerOfTwoThirtyTwoBit) -> (LLVMValueRefWrapper, PointerValue)
 	{
-		let arrayPointer = self.pointerToStructField(pointerValue, fieldIndex);
-		let loadedValue = self.loadValue(arrayPointer, offsetIntoBaseType, from, to, valueAlignment);
+		let named = format!("{}_value", named);
+		let arrayPointer = self.pointerToStructField(&named, pointerValue, fieldIndex);
+		let loadedValue = self.loadValue(&named, arrayPointer, offsetIntoBaseType, from, to, valueAlignment);
 		(loadedValue, arrayPointer)
 	}
 	
 	#[inline(always)]
-	pub fn loadPointerFromReferencedStructField(&self, pointerValue: PointerValue, fieldIndex: u32, offsetIntoBaseType: u64, from: TypeBasedAliasAnalysisNode) -> (PointerValue, PointerValue)
+	pub fn loadPointerFromReferencedStructField(&self, named: &str, pointerValue: PointerValue, fieldIndex: u32, offsetIntoBaseType: u64, from: TypeBasedAliasAnalysisNode) -> (PointerValue, PointerValue)
 	{
-		let arrayPointer = self.pointerToStructField(pointerValue, fieldIndex);
-		let loadedPointer = self.loadPointer(arrayPointer, offsetIntoBaseType, from);
+		let named = format!("{}_pointer", named);
+		let arrayPointer = self.pointerToStructField(&named, pointerValue, fieldIndex);
+		let loadedPointer = self.loadPointer(&named, arrayPointer, offsetIntoBaseType, from);
 		(loadedPointer, arrayPointer)
 	}
 	

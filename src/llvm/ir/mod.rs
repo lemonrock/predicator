@@ -36,6 +36,7 @@ include!("FunctionParameter.rs");
 include!("LlvmType.rs");
 include!("ModuleDefinition.rs");
 include!("TailCall.rs");
+include!("ToLLVMBasicBlockRef.rs");
 include!("ToLLVMValueRefWrapper.rs");
 include!("ToReference.rs");
 include!("UnnamedAddressAttribute.rs");

@@ -2,7 +2,7 @@
 // Copyright © 2017 The developers of mqtt. See the COPYRIGHT file in the top-level directory of this distribution and at https://raw.githubusercontent.com/lemonrock/mqtt/master/COPYRIGHT.
 
 
-pub trait Value: Sized
+pub trait Value: Sized + Copy + Clone
 {
 	#[inline(always)]
 	fn fromLLVMValueRef(value: LLVMValueRef) -> Self;
@@ -35,13 +35,13 @@ pub trait Value: Sized
 	}
 	
 	#[inline(always)]
-	fn getNameMightBeNull(&self) -> *const c_char
+	fn getName(&self) -> *const c_char
 	{
 		unsafe { LLVMGetValueName(self.asLLVMValueRef()) }
 	}
 	
 	#[inline(always)]
-	fn setNameMightBeNull(&self, name: *const c_char)
+	fn setName(&self, name: *const c_char)
 	{
 		unsafe { LLVMSetValueName(self.asLLVMValueRef(), name) }
 	}

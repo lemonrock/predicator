@@ -8,7 +8,7 @@ pub(crate) trait Builder
 	fn dispose(self);
 	
 	#[inline(always)]
-	fn positionAtEndOfBasicBlock(self, basicBlockReference: LLVMBasicBlockRef);
+	fn positionAtEndOfBasicBlock<ToBlockReference: ToLLVMBasicBlockRef>(self, basicBlockReference: ToBlockReference);
 	
 	#[inline(always)]
 	fn returnVoid(self) -> TerminatorValue;
@@ -17,13 +17,13 @@ pub(crate) trait Builder
 	fn returnValue<V: Value>(self, value: V) -> TerminatorValue;
 	
 	#[inline(always)]
-	fn unconditionalBranch<'a>(self, to: &Block<'a>) -> TerminatorValue;
+	fn unconditionalBranch<ToBlockReference: ToLLVMBasicBlockRef>(self, to: &ToBlockReference) -> TerminatorValue;
 	
 	#[inline(always)]
-	fn conditionalBranch<'a>(self, ifConditional: ComparisonResultValue, thenBlock: &Block<'a>, elseBlock: &Block<'a>) -> TerminatorValue;
+	fn conditionalBranch<ThenToBlockReference: ToLLVMBasicBlockRef, ElseToBlockReference: ToLLVMBasicBlockRef>(self, ifConditional: ComparisonResultValue, thenBlock: &ThenToBlockReference, elseBlock: &ElseToBlockReference) -> TerminatorValue;
 	
 	#[inline(always)]
-	fn switchBranch<'a, V: Value>(self, context: &Context, switchOnValue: V, defaultBlock: &Block<'a>, caseBlocks: &[(u8, LLVMBasicBlockRef)]) -> TerminatorValue;
+	fn switchBranch<V: Value, DefaultToBlockReference: ToLLVMBasicBlockRef, CaseToBlockReference: ToLLVMBasicBlockRef>(self, context: &Context, switchOnValue: V, defaultBlock: &DefaultToBlockReference, caseBlocks: Vec<(u8, CaseToBlockReference)>) -> TerminatorValue;
 	
 	#[inline(always)]
 	fn phi(self, typeReference: LLVMTypeRefWrapper, name: Option<&CStr>) -> PhiInstructionValue;
@@ -58,9 +58,9 @@ impl Builder for LLVMBuilderRef
 	}
 	
 	#[inline(always)]
-	fn positionAtEndOfBasicBlock(self, basicBlockReference: LLVMBasicBlockRef)
+	fn positionAtEndOfBasicBlock<ToBlockReference: ToLLVMBasicBlockRef>(self, basicBlockReference: ToBlockReference)
 	{
-		unsafe { LLVMPositionBuilderAtEnd(self, basicBlockReference) }
+		unsafe { LLVMPositionBuilderAtEnd(self, basicBlockReference.toLLVMBasicBlockRef()) }
 	}
 	
 	#[inline(always)]
@@ -76,25 +76,25 @@ impl Builder for LLVMBuilderRef
 	}
 	
 	#[inline(always)]
-	fn unconditionalBranch<'a>(self, to: &Block<'a>) -> TerminatorValue
+	fn unconditionalBranch<ToBlockReference: ToLLVMBasicBlockRef>(self, to: &ToBlockReference) -> TerminatorValue
 	{
-		TerminatorValue::fromLLVMValueRef(unsafe { LLVMBuildBr(self, to.basicBlockReference) })
+		TerminatorValue::fromLLVMValueRef(unsafe { LLVMBuildBr(self, to.toLLVMBasicBlockRef()) })
 	}
 	
 	#[inline(always)]
-	fn conditionalBranch<'a>(self, ifConditional: ComparisonResultValue, thenBlock: &Block<'a>, elseBlock: &Block<'a>) -> TerminatorValue
+	fn conditionalBranch<ThenToBlockReference: ToLLVMBasicBlockRef, ElseToBlockReference: ToLLVMBasicBlockRef>(self, ifConditional: ComparisonResultValue, thenBlock: &ThenToBlockReference, elseBlock: &ElseToBlockReference) -> TerminatorValue
 	{
-		TerminatorValue::fromLLVMValueRef(unsafe { LLVMBuildCondBr(self, ifConditional.asLLVMValueRef(), thenBlock.basicBlockReference, elseBlock.basicBlockReference) })
+		TerminatorValue::fromLLVMValueRef(unsafe { LLVMBuildCondBr(self, ifConditional.asLLVMValueRef(), thenBlock.toLLVMBasicBlockRef(), elseBlock.toLLVMBasicBlockRef()) })
 	}
 	
 	#[inline(always)]
-	fn switchBranch<'a, V: Value>(self, context: &Context, switchOnValue: V, defaultBlock: &Block<'a>, caseBlocks: &[(u8, LLVMBasicBlockRef)]) -> TerminatorValue
+	fn switchBranch<V: Value, DefaultToBlockReference: ToLLVMBasicBlockRef, CaseToBlockReference: ToLLVMBasicBlockRef>(self, context: &Context, switchOnValue: V, defaultBlock: &DefaultToBlockReference, caseBlocks: Vec<(u8, CaseToBlockReference)>) -> TerminatorValue
 	{
-		let switchReference = unsafe { LLVMBuildSwitch(self, switchOnValue.asLLVMValueRef(), defaultBlock.basicBlockReference, caseBlocks.len() as u32) };
+		let switchReference = unsafe { LLVMBuildSwitch(self, switchOnValue.asLLVMValueRef(), defaultBlock.toLLVMBasicBlockRef(), caseBlocks.len() as u32) };
 		
-		for &(constant, caseBlock) in caseBlocks
+		for (constant, caseBlock) in caseBlocks
 		{
-			unsafe { LLVMAddCase(switchReference, context.constant(&Constant::integer8BitUnsigned(constant)).asLLVMValueRef(), caseBlock) };
+			unsafe { LLVMAddCase(switchReference, context.constant(&Constant::integer8BitUnsigned(constant)).asLLVMValueRef(), caseBlock.toLLVMBasicBlockRef()) };
 		}
 		
 		TerminatorValue::fromLLVMValueRef(switchReference)
