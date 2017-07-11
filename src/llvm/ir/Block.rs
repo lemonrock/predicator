@@ -205,7 +205,7 @@ impl<'a> Block<'a>
 	#[inline(always)]
 	pub fn ifFalseCarryOn<TrueToBlockReference: ToLLVMBasicBlockRef>(&self, isTrue: ComparisonResultValue, ifTrueBlock: &TrueToBlockReference) -> Block<'a>
 	{
-		let carryOnBlock = self.child();
+		let carryOnBlock = self.namedChild("carryOn");
 		self.conditionalBranch(isTrue, ifTrueBlock, &carryOnBlock);
 		carryOnBlock
 	}
