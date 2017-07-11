@@ -133,9 +133,9 @@ impl<'a> Block<'a>
 	}
 	
 	#[inline(always)]
-	pub fn phi(&self, llvmType: &LlvmType) -> PhiInstructionValue
+	pub fn phi(&self, llvmType: &LlvmType, named: &str) -> PhiInstructionValue
 	{
-		self.builderReference.phi(self.typeRef(llvmType), None)
+		self.builderReference.phi(self.typeRef(llvmType), Some(&CString::new(named).unwrap()))
 	}
 	
 	#[inline(always)]
@@ -145,9 +145,9 @@ impl<'a> Block<'a>
 	}
 	
 	#[inline(always)]
-	pub fn arithmetic<LHS: ToLLVMValueRefWrapper, RHS: ToLLVMValueRefWrapper>(&self, leftHandSide: LHS, operation: BinaryArithmetic, rightHandSide: RHS) -> LLVMValueRefWrapper
+	pub fn arithmetic<LHS: ToLLVMValueRefWrapper, RHS: ToLLVMValueRefWrapper>(&self, leftHandSide: LHS, operation: BinaryArithmetic, rightHandSide: RHS, named: &str) -> LLVMValueRefWrapper
 	{
-		operation.operate(self.builderReference, self.toLLVMValueRefWrapper(leftHandSide), self.toLLVMValueRefWrapper(rightHandSide), None)
+		operation.operate(self.builderReference, self.toLLVMValueRefWrapper(leftHandSide), self.toLLVMValueRefWrapper(rightHandSide), Some(&CString::new(named).unwrap()))
 	}
 	
 	#[inline(always)]
@@ -157,9 +157,9 @@ impl<'a> Block<'a>
 	}
 	
 	#[inline(always)]
-	pub fn increment<V: Value>(&self, original: V, increment: u64) -> LLVMValueRefWrapper
+	pub fn increment<V: Value>(&self, original: V, increment: u64, named: &str) -> LLVMValueRefWrapper
 	{
-		self.arithmetic(original, BinaryArithmetic::Add, increment)
+		self.arithmetic(original, BinaryArithmetic::Add, increment, named)
 	}
 	
 	#[inline(always)]
@@ -189,17 +189,17 @@ impl<'a> Block<'a>
 	}
 	
 	#[inline(always)]
-	pub fn comparison<LHS: ToLLVMValueRefWrapper, RHS: ToLLVMValueRefWrapper>(&self, leftHandSide: LHS, predicate: LLVMIntPredicate, rightHandSide: RHS) -> ComparisonResultValue
+	pub fn comparison<LHS: ToLLVMValueRefWrapper, RHS: ToLLVMValueRefWrapper>(&self, leftHandSide: LHS, predicate: LLVMIntPredicate, rightHandSide: RHS, named: &str) -> ComparisonResultValue
 	{
-		self.builderReference.integerComparison(self.toLLVMValueRefWrapper(leftHandSide), predicate, self.toLLVMValueRefWrapper(rightHandSide), None)
+		self.builderReference.integerComparison(self.toLLVMValueRefWrapper(leftHandSide), predicate, self.toLLVMValueRefWrapper(rightHandSide), Some(&CString::new(named).unwrap()))
 	}
 	
 	#[inline(always)]
-	pub fn ifInteger<LHS: ToLLVMValueRefWrapper, RHS: ToLLVMValueRefWrapper>(&self, leftHandSide: LHS, predicate: LLVMIntPredicate, rightHandSide: RHS) -> (ComparisonResultValue, Block<'a>, Block<'a>)
+	pub fn ifInteger<LHS: ToLLVMValueRefWrapper, RHS: ToLLVMValueRefWrapper>(&self, leftHandSide: LHS, predicate: LLVMIntPredicate, rightHandSide: RHS, ifName: &str, thenName: &str, elseName: &str) -> (ComparisonResultValue, Block<'a>, Block<'a>)
 	{
-		let thenBlock = self.child();
-		let elseBlock = self.child();
-		(self.comparison(leftHandSide, predicate,rightHandSide), thenBlock, elseBlock)
+		let thenBlock = self.namedChild(thenName);
+		let elseBlock = self.namedChild(elseName);
+		(self.comparison(leftHandSide, predicate,rightHandSide, ifName), thenBlock, elseBlock)
 	}
 	
 	#[inline(always)]

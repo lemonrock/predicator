@@ -6,7 +6,7 @@ pub struct FunctionDefinition
 {
 	name: CString,
 	returns: FunctionParameter,
-	parameters: Vec<FunctionParameter>,
+	parameters: Vec<(String, FunctionParameter)>,
 	hasVarArgs: bool,
 	functionAttributes: HashSet<FunctionAttribute>,
 	targetDependentFunctionAttributes: HashSet<TargetDependentFunctionAttribute>,
@@ -25,7 +25,7 @@ pub struct FunctionDefinition
 impl FunctionDefinition
 {
 	#[inline(always)]
-	pub fn public(name: &str, returns: FunctionParameter, parameters: Vec<FunctionParameter>) -> Self
+	pub fn public(name: &str, returns: FunctionParameter, parameters: Vec<(String, FunctionParameter)>) -> Self
 	{
 		use self::FunctionAttribute::*;
 		
@@ -85,7 +85,7 @@ impl FunctionDefinition
 	}
 	
 	#[inline(always)]
-	pub fn private(name: &str, returns: FunctionParameter, parameters: Vec<FunctionParameter>, functionAttributes: HashSet<FunctionAttribute>, targetDependentFunctionAttributes: HashSet<TargetDependentFunctionAttribute>) -> Self
+	pub fn private(name: &str, returns: FunctionParameter, parameters: Vec<(String, FunctionParameter)>, functionAttributes: HashSet<FunctionAttribute>, targetDependentFunctionAttributes: HashSet<TargetDependentFunctionAttribute>) -> Self
 	{
 		Self
 		{
@@ -111,7 +111,7 @@ impl FunctionDefinition
 	#[inline(always)]
 	pub(crate) fn create(&self, context: &Context, module: &Module) -> FunctionValue
 	{
-		let functionType = context.typeRef(&LlvmType::Function { returns: Box::new(self.returns.llvmType.clone()), parameters: self.parameters.iter().map(|ref functionParameter| functionParameter.llvmType.clone() ).collect(), hasVarArgs: self.hasVarArgs }).asLLVMTypeRef();
+		let functionType = context.typeRef(&LlvmType::Function { returns: Box::new(self.returns.llvmType.clone()), parameters: self.parameters.iter().map(|ref functionParameter| functionParameter.1.llvmType.clone() ).collect(), hasVarArgs: self.hasVarArgs }).asLLVMTypeRef();
 		let functionReference = unsafe { LLVMAddFunction(module.reference, self.name.as_ptr(), functionType) };
 		
 		let functionValue = FunctionValue::fromLLVMValueRef(functionReference);
@@ -123,11 +123,16 @@ impl FunctionDefinition
 		}
 		
 		let mut parameterIndex = 1u32;
-		for parameter in self.parameters.iter()
+		for &(ref name, ref parameter) in self.parameters.iter()
 		{
+			let parameterValue = unsafe { LLVMGetParam(functionReference, parameterIndex - 1) };
+			
+			let name = CString::new(name.as_bytes()).unwrap();
+			unsafe { LLVMSetValueName(parameterValue, name.as_ptr()) };
+			
 			if let Some(alignment) = parameter.alignment
 			{
-				unsafe { LLVMSetParamAlignment(LLVMGetParam(functionReference, parameterIndex - 1), alignment.as_u32()) }
+				unsafe { LLVMSetParamAlignment(parameterValue, alignment.as_u32()) }
 			}
 			
 			for attribute in parameter.attributes.iter()
