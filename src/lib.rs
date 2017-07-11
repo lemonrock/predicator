@@ -6,7 +6,9 @@
 #![allow(non_snake_case)]
 #![allow(non_upper_case_globals)]
 #![feature(associated_consts)]
+#![feature(const_fn)]
 #![feature(specialization)]
+#![feature(thread_local)]
 
 
 #[macro_use] extern crate cpp;
@@ -14,7 +16,7 @@ extern crate libc;
 pub extern crate llvm_sys;
 #[macro_use] extern crate maplit;
 extern crate rand;
-pub extern crate rust_extra;
+#[macro_use] pub extern crate rust_extra;
 
 
 use ::libc::c_char;

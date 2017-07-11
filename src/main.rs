@@ -16,7 +16,7 @@ fn main()
 	let plugin_bit_code_file_path = rust_plugin_compiler.example().expect("Did not compile plugin");
 	
 	// Create a super context
-	let super_context = SuperContext::default();
+	let super_context = SuperContext::threadLocal();
 	
 	// There needs to be at least one context per thread
 	let (jit_context, context) = super_context.newJitContext(NaiveSymbolResolver(0)).expect("Could not create a new JIT context");

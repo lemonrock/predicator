@@ -32,7 +32,7 @@ cpp = "0.3"
 libc = "0.2"
 llvm-sys = "40.0.*"
 maplit = "0.1.4"
-rust-extra = "0.0.15"
+rust-extra = "0.0.17"
 rand = "0.3"
 
 [build-dependencies]

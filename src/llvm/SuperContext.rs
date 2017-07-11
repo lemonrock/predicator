@@ -7,21 +7,22 @@ pub struct SuperContext
 	enumAttributeIdentifierCache: EnumAttributeIdentifierCache,
 }
 
-impl Default for SuperContext
-{
-	fn default() -> Self
-	{
-		Self::initialiseOnceOnMainThread();
-		
-		Self
-		{
-			enumAttributeIdentifierCache: EnumAttributeIdentifierCache::default(),
-		}
-	}
-}
-
 impl SuperContext
 {
+	#[inline(always)]
+	pub fn threadLocal() -> &'static Self
+	{
+		true_immutable_thread_local!(SuperContext,
+		{
+			Self::initialiseOnceOnMainThread();
+			
+			Self
+			{
+				enumAttributeIdentifierCache: EnumAttributeIdentifierCache::default(),
+			}
+		})
+	}
+	
 	#[inline(always)]
 	fn initialiseOnceOnMainThread()
 	{

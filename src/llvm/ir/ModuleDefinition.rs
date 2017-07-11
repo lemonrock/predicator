@@ -5,12 +5,12 @@
 #[derive(Debug, Clone)]
 pub struct ModuleDefinition
 {
-	pub name: String,
-	pub identifier: String,
-	pub targetTriple: CString,
-	pub targetMachineDataLayout: TargetMachineDataLayout,
-	pub inlineAssembler: Option<String>,
-	pub metadata: HashMap<String, MetadataNode>,
+	name: String,
+	identifier: String,
+	targetTriple: CString,
+	targetMachineDataLayout: TargetMachineDataLayout,
+	inlineAssembler: Option<String>,
+	metadata: HashMap<String, MetadataNode>,
 }
 
 impl ModuleDefinition

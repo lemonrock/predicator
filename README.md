@@ -147,7 +147,7 @@ use ::predicator::llvm::*;
 fn main()
 {
 	// Create a super context
-	let super_context = SuperContext::default();
+	let super_context = SuperContext::threadLocal();
 	
 	// There needs to be at least one context per thread
 	let jit_context = super_context.newJitContext(NaiveSymbolResolver(0)).expect("Could not create a new JIT context");

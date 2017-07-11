@@ -12,7 +12,6 @@ pub struct FunctionDefinition
 	targetDependentFunctionAttributes: HashSet<TargetDependentFunctionAttribute>,
 	callingConvention: UsefulLLVMCallConv,
 	garbageCollectorStrategy: Option<CString>,
-	personalityFunctionReference: Option<LLVMValueRefWrapper>,
 	
 	linkage: UsefulLLVMLinkage,
 	visibility: UsefulLLVMVisibility,
@@ -73,7 +72,6 @@ impl FunctionDefinition
 			targetDependentFunctionAttributes: targetDependentFunctionAttributes,
 			callingConvention: UsefulLLVMCallConv::LLVMCCallConv,
 			garbageCollectorStrategy: None,
-			personalityFunctionReference: None,
 			
 			linkage: UsefulLLVMLinkage::LLVMExternalLinkage,
 			visibility: UsefulLLVMVisibility::LLVMDefaultVisibility,
@@ -97,7 +95,6 @@ impl FunctionDefinition
 			targetDependentFunctionAttributes: targetDependentFunctionAttributes,
 			callingConvention: UsefulLLVMCallConv::LLVMFastCallConv,
 			garbageCollectorStrategy: None,
-			personalityFunctionReference: None,
 			
 			linkage: UsefulLLVMLinkage::LLVMLinkerPrivateLinkage,
 			visibility: UsefulLLVMVisibility::LLVMDefaultVisibility,
@@ -161,10 +158,10 @@ impl FunctionDefinition
 			unsafe { LLVMSetGC(functionReference, garbageCollectorStrategy.as_ptr()) };
 		}
 		
-		if let Some(personalityFunctionReference) = self.personalityFunctionReference
-		{
-			unsafe { LLVMSetPersonalityFn(functionReference, personalityFunctionReference.asLLVMValueRef()) };
-		}
+//		if let Some(personalityFunctionReference) = self.personalityFunctionReference
+//		{
+//			unsafe { LLVMSetPersonalityFn(functionReference, personalityFunctionReference.asLLVMValueRef()) };
+//		}
 		
 		unsafe { LLVMSetLinkage(functionReference, self.linkage.to_LLVMLinkage()) };
 		
