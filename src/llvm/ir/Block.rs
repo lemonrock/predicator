@@ -127,7 +127,7 @@ impl<'a> Block<'a>
 	}
 	
 	#[inline(always)]
-	pub fn switchBranch<V: ToLLVMValueRefWrapper, DefaultToBlockReference: ToLLVMBasicBlockRef, CaseToBlockReference: ToLLVMBasicBlockRef>(&self, switchOnValue: V, defaultBlock: &DefaultToBlockReference, caseBlocks: Vec<(u8, CaseToBlockReference)>)
+	pub fn switchBranch<V: ToLLVMValueRefWrapper, DefaultToBlockReference: ToLLVMBasicBlockRef, CaseToBlockReference: ToLLVMBasicBlockRef>(&self, switchOnValue: V, defaultBlock: &DefaultToBlockReference, caseBlocks: &[(u8, CaseToBlockReference)])
 	{
 		self.builderReference.switchBranch(self.context, self.toLLVMValueRefWrapper(switchOnValue), defaultBlock, caseBlocks);
 	}

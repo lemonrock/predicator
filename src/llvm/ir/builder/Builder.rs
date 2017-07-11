@@ -23,7 +23,7 @@ pub(crate) trait Builder
 	fn conditionalBranch<ThenToBlockReference: ToLLVMBasicBlockRef, ElseToBlockReference: ToLLVMBasicBlockRef>(self, ifConditional: ComparisonResultValue, thenBlock: &ThenToBlockReference, elseBlock: &ElseToBlockReference) -> TerminatorValue;
 	
 	#[inline(always)]
-	fn switchBranch<V: Value, DefaultToBlockReference: ToLLVMBasicBlockRef, CaseToBlockReference: ToLLVMBasicBlockRef>(self, context: &Context, switchOnValue: V, defaultBlock: &DefaultToBlockReference, caseBlocks: Vec<(u8, CaseToBlockReference)>) -> TerminatorValue;
+	fn switchBranch<V: Value, DefaultToBlockReference: ToLLVMBasicBlockRef, CaseToBlockReference: ToLLVMBasicBlockRef>(self, context: &Context, switchOnValue: V, defaultBlock: &DefaultToBlockReference, caseBlocks: &[(u8, CaseToBlockReference)]) -> TerminatorValue;
 	
 	#[inline(always)]
 	fn phi(self, typeReference: LLVMTypeRefWrapper, name: Option<&CStr>) -> PhiInstructionValue;
@@ -88,13 +88,13 @@ impl Builder for LLVMBuilderRef
 	}
 	
 	#[inline(always)]
-	fn switchBranch<V: Value, DefaultToBlockReference: ToLLVMBasicBlockRef, CaseToBlockReference: ToLLVMBasicBlockRef>(self, context: &Context, switchOnValue: V, defaultBlock: &DefaultToBlockReference, caseBlocks: Vec<(u8, CaseToBlockReference)>) -> TerminatorValue
+	fn switchBranch<V: Value, DefaultToBlockReference: ToLLVMBasicBlockRef, CaseToBlockReference: ToLLVMBasicBlockRef>(self, context: &Context, switchOnValue: V, defaultBlock: &DefaultToBlockReference, caseBlocks: &[(u8, CaseToBlockReference)]) -> TerminatorValue
 	{
 		let switchReference = unsafe { LLVMBuildSwitch(self, switchOnValue.asLLVMValueRef(), defaultBlock.toLLVMBasicBlockRef(), caseBlocks.len() as u32) };
 		
-		for (constant, caseBlock) in caseBlocks
+		for &(ref constant, ref caseBlock) in caseBlocks
 		{
-			unsafe { LLVMAddCase(switchReference, context.constant(&Constant::integer8BitUnsigned(constant)).asLLVMValueRef(), caseBlock.toLLVMBasicBlockRef()) };
+			unsafe { LLVMAddCase(switchReference, context.constant(&Constant::integer8BitUnsigned(*constant)).asLLVMValueRef(), caseBlock.toLLVMBasicBlockRef()) };
 		}
 		
 		TerminatorValue::fromLLVMValueRef(switchReference)
