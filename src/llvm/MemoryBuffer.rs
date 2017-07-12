@@ -43,6 +43,19 @@ impl<'a> MemoryBuffer<'a>
 	}
 	
 	#[inline(always)]
+	pub fn fromRaw(bytes: *const u8, length: usize) -> Self
+	{
+		// "a\0"
+		static BufferName: [i8; 2] = [65, 0];
+		
+		Self
+		{
+			reference: unsafe { LLVMCreateMemoryBufferWithMemoryRange(bytes as *const _, length, BufferName.as_ptr(), 1) },
+			slice: None,
+		}
+	}
+	
+	#[inline(always)]
 	pub fn fromFile(filePath: &str) -> Result<Self, String>
 	{
 		let filePath = CString::new(filePath).expect("File path contains embedded NULs");

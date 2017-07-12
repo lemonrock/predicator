@@ -77,18 +77,6 @@ impl<'a> Block<'a>
 	}
 	
 	#[inline(always)]
-	pub fn parameterAt(&self, index: usize) -> Option<FunctionParameterValue>
-	{
-		self.functionValue.parameterAt(index)
-	}
-	
-	#[inline(always)]
-	pub fn parameterAtAsPointer(&self, index: usize) -> Option<PointerValue>
-	{
-		self.parameterAt(index).map(|functionParameterValue| PointerValue::fromLLVMValueRef(functionParameterValue.asLLVMValueRef()) )
-	}
-	
-	#[inline(always)]
 	pub fn returnVoid(&self)
 	{
 		self.builderReference.returnVoid();

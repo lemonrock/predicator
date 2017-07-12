@@ -129,7 +129,7 @@ impl TargetDependentFunctionAttribute
 				
 				StringPowerOfTwo(name, powerOfTwo) =>
 				{
-					let value = format!("{}", powerOfTwo.as_u32());
+					let value = format!("{}\0", powerOfTwo.as_u32());
 					
 					let bytes = value.as_bytes();
 					
@@ -152,6 +152,8 @@ impl TargetDependentFunctionAttribute
 						}
 						features.push_str(toggledFeature.value());
 					}
+					
+					features.push('\0');
 					
 					let bytes = features.as_bytes();
 					
