@@ -3,7 +3,7 @@
 
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct LLVMTypeRefWrapper(pub LLVMTypeRef);
+pub struct LLVMTypeRefWrapper(LLVMTypeRef);
 
 impl Debug for LLVMTypeRefWrapper
 {

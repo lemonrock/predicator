@@ -57,4 +57,109 @@ impl FunctionValue
 	{
 		Block::create(name, context, self)
 	}
+	
+	#[inline(always)]
+	pub fn setFunctionAttribute(&self, context: &Context, attribute: &FunctionAttribute)
+	{
+		let attributeRef = context.functionAttributeRef(attribute);
+		self.setAttribute(LLVMAttributeFunctionIndex, attributeRef);
+	}
+	
+	#[inline(always)]
+	pub fn setFunctionReturnsAttribute(&self, context: &Context, attribute: &ParameterAttribute)
+	{
+		self.setFunctionParameterAttribute(context, LLVMAttributeReturnIndex, attribute);
+	}
+	
+	#[inline(always)]
+	pub fn setFunctionParameterAttribute(&self, context: &Context, parameterIndex: u32, attribute: &ParameterAttribute)
+	{
+		let attributeRef = context.parameterAttributeRef(attribute);
+		self.setAttribute(parameterIndex, attributeRef);
+	}
+	
+	#[inline(always)]
+	pub(crate) fn setAttribute(&self, attributeIndex: u32, attributeRef: LLVMAttributeRef)
+	{
+		unsafe { LLVMAddAttributeAtIndex(self.asLLVMValueRef(), attributeIndex, attributeRef) };
+	}
+	
+	#[inline(always)]
+	pub fn setCallingConvention(&self, callingConvention: UsefulLLVMCallConv)
+	{
+		unsafe { LLVMSetFunctionCallConv(self.asLLVMValueRef(), callingConvention as u32) };
+	}
+	
+	#[inline(always)]
+	pub fn setGarbageCollectorStrategy(&self, garbageCollectorStrategy: &Option<CString>)
+	{
+		if let &Some(ref garbageCollectorStrategy) = garbageCollectorStrategy
+		{
+			unsafe { LLVMSetGC(self.asLLVMValueRef(), garbageCollectorStrategy.as_ptr()) };
+		}
+	}
+	
+	#[inline(always)]
+	pub fn setLinkage(&self, linkage: UsefulLLVMLinkage)
+	{
+		unsafe { LLVMSetLinkage(self.asLLVMValueRef(), linkage.to_LLVMLinkage()) };
+	}
+	
+	#[inline(always)]
+	pub fn setVisibility(&self, visibility: UsefulLLVMVisibility)
+	{
+		unsafe { LLVMSetVisibility(self.asLLVMValueRef(), visibility.to_LLVMVisibility()) };
+	}
+	
+	#[inline(always)]
+	pub fn setDllStorageClass(&self, dllStorageClass: Option<UsefulLLVMDLLStorageClass>)
+	{
+		if let Some(dllStorageClass) = dllStorageClass
+		{
+			unsafe { LLVMSetDLLStorageClass(self.asLLVMValueRef(), dllStorageClass.to_LLVMDLLStorageClass()) };
+		}
+	}
+	
+	#[inline(always)]
+	pub fn setAlignment(&self, alignment: Option<PowerOfTwoThirtyTwoBit>)
+	{
+		if let Some(alignment) = alignment
+		{
+			unsafe { LLVMSetAlignment(self.asLLVMValueRef(), alignment.as_u32()) };
+		}
+	}
+	
+	#[inline(always)]
+	pub fn setUnnamedAddress(&self, hasUnnamedAddress: bool)
+	{
+		let HasUnnamedAddr = if hasUnnamedAddress
+		{
+			1
+		}
+		else
+		{
+			0
+		};
+		
+		unsafe { LLVMSetUnnamedAddr(self.asLLVMValueRef(), HasUnnamedAddr) };
+	}
+	
+	#[inline(always)]
+	pub fn setSection(&self, section: &Option<String>)
+	{
+		if let Some(section) = section.as_ref().map(String::as_str)
+		{
+			let cSection = CString::new(section).expect("section contains embedded NULLs");
+			unsafe { LLVMSetSection(self.asLLVMValueRef(), cSection.as_ptr()) };
+		}
+	}
+	
+	#[inline(always)]
+	pub fn setPersonalityFunction(&self, personalityFunctionReference: Option<LLVMValueRefWrapper>)
+	{
+		if let Some(personalityFunctionReference) = personalityFunctionReference
+		{
+			unsafe { LLVMSetPersonalityFn(self.asLLVMValueRef(), personalityFunctionReference.asLLVMValueRef()) };
+		}
+	}
 }

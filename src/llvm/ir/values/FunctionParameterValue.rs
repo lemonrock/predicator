@@ -33,4 +33,11 @@ impl FunctionParameterValue
 	{
 		FunctionValue::fromLLVMValueRef(unsafe { LLVMGetParamParent(self.asLLVMValueRef()) })
 	}
+	
+	#[inline(always)]
+	pub fn setName(&self, name: &str)
+	{
+		let name = CString::new(name.as_bytes()).unwrap();
+		unsafe { LLVMSetValueName(self.asLLVMValueRef(), name.as_ptr()) };
+	}
 }

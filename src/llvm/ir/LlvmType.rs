@@ -116,7 +116,7 @@ impl ToReference<LLVMTypeRefWrapper> for LlvmType
 			}
 		};
 		
-		LLVMTypeRefWrapper(value)
+		LLVMTypeRefWrapper::fromLLVMTypeRef(value)
 	}
 }
 

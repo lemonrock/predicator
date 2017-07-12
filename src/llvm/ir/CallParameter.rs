@@ -11,6 +11,7 @@ pub struct CallParameter
 
 impl CallParameter
 {
+	#[inline(always)]
 	pub fn simple() -> Self
 	{
 		Self

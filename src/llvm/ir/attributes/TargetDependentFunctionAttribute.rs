@@ -18,147 +18,140 @@ impl TargetDependentFunctionAttribute
 	// PowerOfTwoThirtyTwoBit::_8
 	pub fn stack_protector_buffer_size(size: PowerOfTwoThirtyTwoBit) -> Self
 	{
-		TargetDependentFunctionAttribute::StringPowerOfTwo(b"stack-protector-buffer-size\0", size)
+		TargetDependentFunctionAttribute::StringPowerOfTwo(b"stack-protector-buffer-size", size)
 	}
 	
 	// false
 	pub fn disable_tail_calls(on: bool) -> Self
 	{
-		TargetDependentFunctionAttribute::StringBoolean(b"disable-tail-calls\0", on)
+		TargetDependentFunctionAttribute::StringBoolean(b"disable-tail-calls", on)
 	}
 	
 	// true
 	pub fn no_frame_pointer_elim(on: bool) -> Self
 	{
-		TargetDependentFunctionAttribute::StringBoolean(b"no-frame-pointer-elim\0", on)
+		TargetDependentFunctionAttribute::StringBoolean(b"no-frame-pointer-elim", on)
 	}
 	
-	pub const no_frame_pointer_elim_non_leaf: TargetDependentFunctionAttribute = TargetDependentFunctionAttribute::StringValueless(b"no-frame-pointer-elim-non-leaf\0");
+	pub const no_frame_pointer_elim_non_leaf: TargetDependentFunctionAttribute = TargetDependentFunctionAttribute::StringValueless(b"no-frame-pointer-elim-non-leaf");
 	
 	// false
 	pub fn no_jump_tables(on: bool) -> Self
 	{
-		TargetDependentFunctionAttribute::StringBoolean(b"no-jump-tables\0", on)
+		TargetDependentFunctionAttribute::StringBoolean(b"no-jump-tables", on)
 	}
 	
 	// false
 	pub fn correctly_rounded_divide_sqrt_fp_math(on: bool) -> Self
 	{
-		TargetDependentFunctionAttribute::StringBoolean(b"correctly-rounded-divide-sqrt-fp-math\0", on)
+		TargetDependentFunctionAttribute::StringBoolean(b"correctly-rounded-divide-sqrt-fp-math", on)
 	}
 	
 	// false
 	pub fn less_precise_fpmad(on: bool) -> Self
 	{
-		TargetDependentFunctionAttribute::StringBoolean(b"less-precise-fpmad\0", on)
+		TargetDependentFunctionAttribute::StringBoolean(b"less-precise-fpmad", on)
 	}
 	
 	// false
 	pub fn no_infs_fp_math(on: bool) -> Self
 	{
-		TargetDependentFunctionAttribute::StringBoolean(b"no-infs-fp-math\0", on)
+		TargetDependentFunctionAttribute::StringBoolean(b"no-infs-fp-math", on)
 	}
 	
 	// false
 	pub fn no_nans_fp_math(on: bool) -> Self
 	{
-		TargetDependentFunctionAttribute::StringBoolean(b"no-nans-fp-math\0", on)
+		TargetDependentFunctionAttribute::StringBoolean(b"no-nans-fp-math", on)
 	}
 	
 	// false
 	pub fn no_signed_zeros_fp_math(on: bool) -> Self
 	{
-		TargetDependentFunctionAttribute::StringBoolean(b"no-signed-zeros-fp-math\0", on)
+		TargetDependentFunctionAttribute::StringBoolean(b"no-signed-zeros-fp-math", on)
 	}
 	
 	// false
 	pub fn no_trapping_math(on: bool) -> Self
 	{
-		TargetDependentFunctionAttribute::StringBoolean(b"no-trapping-math\0", on)
+		TargetDependentFunctionAttribute::StringBoolean(b"no-trapping-math", on)
 	}
 	
 	// false
 	pub fn unsafe_fp_math(on: bool) -> Self
 	{
-		TargetDependentFunctionAttribute::StringBoolean(b"unsafe-fp-math\0", on)
+		TargetDependentFunctionAttribute::StringBoolean(b"unsafe-fp-math", on)
 	}
 	
 	// false
 	pub fn use_soft_float(on: bool) -> Self
 	{
-		TargetDependentFunctionAttribute::StringBoolean(b"use-soft-float\0", on)
+		TargetDependentFunctionAttribute::StringBoolean(b"use-soft-float", on)
 	}
 	
 	// core2
 	pub fn target_cpu(name: &'static [u8]) -> Self
 	{
-		TargetDependentFunctionAttribute::StringValue(b"target-cpu\0", name)
+		TargetDependentFunctionAttribute::StringValue(b"target-cpu", name)
 	}
 	
 	// vec![On(cx16), On(fxsr), On(cx16), On(sse), On(sse2), On(ssse3), On(x87)]
 	pub fn target_features(features: Vec<ToggledTargetFeature>) -> Self
 	{
-		TargetDependentFunctionAttribute::StringFeatures(b"target-features\0", features)
+		TargetDependentFunctionAttribute::StringFeatures(b"target-features", features)
 	}
 	
-	pub(crate) fn addToFunction(&self, functionValue: FunctionValue)
+	pub(crate) fn addToFunction(&self, context: &Context, functionValue: FunctionValue)
 	{
 		use self::TargetDependentFunctionAttribute::*;
 		
-		let functionReference = functionValue.asLLVMValueRef();
-		
-		unsafe
+		match *self
 		{
-			match *self
+			StringValueless(name) => context.LLVMAddTargetDependentFunctionAttr(functionValue, name, None),
+			
+			StringValue(name, value) => context.LLVMAddTargetDependentFunctionAttr(functionValue, name, Some(value)),
+			
+			StringBoolean(name, boolean) =>
 			{
-				StringValueless(name) => LLVMAddTargetDependentFunctionAttr(functionReference, name.as_ptr() as *const _, null()),
-				
-				StringValue(name, value) => LLVMAddTargetDependentFunctionAttr(functionReference, name.as_ptr() as *const _, value.as_ptr() as *const _),
-				
-				StringBoolean(name, boolean) =>
+				if boolean
 				{
-					if boolean
+					context.LLVMAddTargetDependentFunctionAttr(functionValue, name, Some(b"true"))
+				}
+				else
+				{
+					context.LLVMAddTargetDependentFunctionAttr(functionValue, name, Some(b"false"))
+				}
+			}
+			
+			StringPowerOfTwo(name, powerOfTwo) =>
+			{
+				let value = format!("{}", powerOfTwo.as_u32());
+				
+				let bytes = value.as_bytes();
+				
+				context.LLVMAddTargetDependentFunctionAttr(functionValue, name, Some(bytes))
+			}
+			
+			StringFeatures(name, ref toggledFeatures) =>
+			{
+				let mut features = String::with_capacity(32);
+				let mut afterFirst = false;
+				for toggledFeature in toggledFeatures.iter()
+				{
+					if afterFirst
 					{
-						LLVMAddTargetDependentFunctionAttr(functionReference, name.as_ptr() as *const _, b"true\0".as_ptr() as *const _)
+						features.push(',');
 					}
 					else
 					{
-						LLVMAddTargetDependentFunctionAttr(functionReference, name.as_ptr() as *const _, b"false\0".as_ptr() as *const _)
+						afterFirst = true;
 					}
+					features.push_str(toggledFeature.value());
 				}
 				
-				StringPowerOfTwo(name, powerOfTwo) =>
-				{
-					let value = format!("{}\0", powerOfTwo.as_u32());
-					
-					let bytes = value.as_bytes();
-					
-					LLVMAddTargetDependentFunctionAttr(functionReference, name.as_ptr() as *const _, bytes.as_ptr() as *const _)
-				}
+				let bytes = features.as_bytes();
 				
-				StringFeatures(name, ref toggledFeatures) =>
-				{
-					let mut features = String::with_capacity(32);
-					let mut afterFirst = false;
-					for toggledFeature in toggledFeatures.iter()
-					{
-						if afterFirst
-						{
-							features.push(',');
-						}
-						else
-						{
-							afterFirst = true;
-						}
-						features.push_str(toggledFeature.value());
-					}
-					
-					features.push('\0');
-					
-					let bytes = features.as_bytes();
-					
-					LLVMAddTargetDependentFunctionAttr(functionReference, name.as_ptr() as *const _, bytes.as_ptr() as *const _)
-				}
+				context.LLVMAddTargetDependentFunctionAttr(functionValue, name, Some(bytes))
 			}
 		}
 	}

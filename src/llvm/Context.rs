@@ -167,6 +167,13 @@ impl Context
 		self.functionAttributeCache.getOrAdd(attribute, self)
 	}
 	
+	// LLVMAddTargetDependentFunctionAttr is deprecated
+	pub(crate) fn LLVMAddTargetDependentFunctionAttr(&self, functionValue: FunctionValue, name: &[u8], value: Option<&[u8]>)
+	{
+		let attributeRef = self.stringAttribute(name, value);
+		functionValue.setAttribute(LLVMAttributeFunctionIndex, attributeRef)
+	}
+	
 	pub fn parameterAttributeRef(&self, attribute: &ParameterAttribute) -> LLVMAttributeRef
 	{
 		self.parameterAttributeCache.getOrAdd(attribute, self)

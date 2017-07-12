@@ -105,7 +105,6 @@ impl FunctionDefinition
 		}
 	}
 	
-	#[inline(always)]
 	pub(crate) fn create(&self, context: &Context, module: &Module) -> FunctionValue
 	{
 		let functionType = context.typeRef(&LlvmType::Function { returns: Box::new(self.returns.llvmType.clone()), parameters: self.parameters.iter().map(|ref functionParameter| functionParameter.1.llvmType.clone() ).collect(), hasVarArgs: self.hasVarArgs }).asLLVMTypeRef();
@@ -115,84 +114,51 @@ impl FunctionDefinition
 		
 		for attribute in self.returns.attributes.iter()
 		{
-			let attributeRef = context.parameterAttributeRef(attribute);
-			unsafe { LLVMAddAttributeAtIndex(functionReference, LLVMAttributeReturnIndex, attributeRef) };
+			functionValue.setFunctionReturnsAttribute(context, attribute);
 		}
 		
 		let mut parameterIndex = 1u32;
 		for &(ref name, ref parameter) in self.parameters.iter()
 		{
-			let parameterValue = unsafe { LLVMGetParam(functionReference, parameterIndex - 1) };
+			let parameterValue = functionValue.parameterAt(parameterIndex as usize - 1).unwrap();
 			
-			let name = CString::new(name.as_bytes()).unwrap();
-			unsafe { LLVMSetValueName(parameterValue, name.as_ptr()) };
+			parameterValue.setName(&name[..]);
 			
 			if let Some(alignment) = parameter.alignment
 			{
-				unsafe { LLVMSetParamAlignment(parameterValue, alignment.as_u32()) }
+				parameterValue.setAlignment(alignment);
 			}
 			
 			for attribute in parameter.attributes.iter()
 			{
-				let attributeRef = context.parameterAttributeRef(attribute);
-				unsafe { LLVMAddAttributeAtIndex(functionReference, parameterIndex, attributeRef) };
+				functionValue.setFunctionParameterAttribute(context, parameterIndex, attribute);
 			}
+			
 			parameterIndex += 1;
 		}
 		
 		for attribute in self.functionAttributes.iter()
 		{
-			let attributeRef = context.functionAttributeRef(attribute);
-			unsafe { LLVMAddAttributeAtIndex(functionReference, LLVMAttributeFunctionIndex, attributeRef) };
+			functionValue.setFunctionAttribute(context, attribute);
 		}
 		
 		for attribute in self.targetDependentFunctionAttributes.iter()
 		{
-			attribute.addToFunction(functionValue);
+			attribute.addToFunction(context, functionValue);
 		}
 		
-		unsafe { LLVMSetFunctionCallConv(functionReference, self.callingConvention as u32) };
+		functionValue.setCallingConvention(self.callingConvention);
+		functionValue.setGarbageCollectorStrategy(&self.garbageCollectorStrategy);
+		functionValue.setLinkage(self.linkage);
+		functionValue.setVisibility(self.visibility);
+		functionValue.setDllStorageClass(self.dllStorageClass);
+		functionValue.setAlignment(self.alignment);
 		
-		if let Some(ref garbageCollectorStrategy) = self.garbageCollectorStrategy
-		{
-			unsafe { LLVMSetGC(functionReference, garbageCollectorStrategy.as_ptr()) };
-		}
+		functionValue.setUnnamedAddress(self.hasUnnamedAddress);
 		
-//		if let Some(personalityFunctionReference) = self.personalityFunctionReference
-//		{
-//			unsafe { LLVMSetPersonalityFn(functionReference, personalityFunctionReference.asLLVMValueRef()) };
-//		}
+		functionValue.setSection(&self.section);
 		
-		unsafe { LLVMSetLinkage(functionReference, self.linkage.to_LLVMLinkage()) };
-		
-		unsafe { LLVMSetVisibility(functionReference, self.visibility.to_LLVMVisibility()) };
-		
-		if let Some(section) = self.section.as_ref().map(String::as_str)
-		{
-			let cSection = CString::new(section).expect("section contains embedded NULLs");
-			unsafe { LLVMSetSection(functionReference, cSection.as_ptr()) };
-		}
-		
-		if let Some(ref dllStorageClass) = self.dllStorageClass
-		{
-			unsafe { LLVMSetDLLStorageClass(functionReference, dllStorageClass.to_LLVMDLLStorageClass()) };
-		}
-		
-		let HasUnnamedAddr = if self.hasUnnamedAddress
-		{
-			1
-		}
-		else
-		{
-			0
-		};
-		
-		unsafe { LLVMSetUnnamedAddr(functionReference, HasUnnamedAddr) };
-		
-		if let Some(alignment) = self.alignment
-		{
-			unsafe { LLVMSetAlignment(functionReference, alignment.as_u32()) };
-		}
+		//functionValue.setPersonalityFunctionReference(self.personalityFunctionReference);
 		
 		functionValue
 	}

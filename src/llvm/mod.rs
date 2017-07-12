@@ -21,6 +21,7 @@ use self::targets::*;
 use ::libc::c_char;
 use ::libc::c_uint;
 use ::libc::c_void;
+use ::llvm_sys::*;
 use ::llvm_sys::analysis::*;
 use ::llvm_sys::bit_reader::*;
 use ::llvm_sys::bit_writer::*;

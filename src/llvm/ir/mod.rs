@@ -5,13 +5,11 @@
 use super::*;
 use self::builder::*;
 use self::useful::*;
-use ::llvm_sys::*;
 use ::rust_extra::powersOfTwo::AsU32;
 use ::rust_extra::powersOfTwo::PowerOfTwoThirtyTwoBit;
 use ::std::cmp::Eq;
 use ::std::hash::Hash;
 use ::std::mem::transmute;
-use ::std::ptr::null;
 use ::std::cell::Cell;
 use ::std::collections::HashMap;
 use ::std::collections::HashSet;

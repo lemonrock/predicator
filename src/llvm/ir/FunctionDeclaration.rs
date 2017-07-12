@@ -88,18 +88,14 @@ impl FunctionDeclaration
 		}
 	}
 	
-	#[inline(always)]
 	pub(crate) fn create(&self, context: &Context, module: &Module) -> FunctionValue
 	{
 		let functionType = context.typeRef(&LlvmType::Function { returns: Box::new(self.returns.llvmType.clone()), parameters: self.parameters.iter().map(|ref functionParameter| functionParameter.llvmType.clone() ).collect(), hasVarArgs: self.hasVarArgs }).asLLVMTypeRef();
-		let functionReference = unsafe { LLVMAddFunction(module.reference, self.name.as_ptr(), functionType) };
-		
-		let functionValue = FunctionValue::fromLLVMValueRef(functionReference);
+		let functionValue = FunctionValue::fromLLVMValueRef(unsafe { LLVMAddFunction(module.reference, self.name.as_ptr(), functionType) });
 		
 		for attribute in self.returns.attributes.iter()
 		{
-			let attributeRef = context.parameterAttributeRef(attribute);
-			unsafe { LLVMAddAttributeAtIndex(functionReference, LLVMAttributeReturnIndex, attributeRef) };
+			functionValue.setFunctionReturnsAttribute(context, attribute);
 		}
 		
 		let mut parameterIndex = 1u32;
@@ -107,43 +103,34 @@ impl FunctionDeclaration
 		{
 			if let Some(alignment) = parameter.alignment
 			{
-				unsafe { LLVMSetParamAlignment(LLVMGetParam(functionReference, parameterIndex - 1), alignment.as_u32()) }
+				let parameterValue = functionValue.parameterAt(parameterIndex as usize - 1).unwrap();
+				parameterValue.setAlignment(alignment);
 			}
 			
 			for attribute in parameter.attributes.iter()
 			{
-				let attributeRef = context.parameterAttributeRef(attribute);
-				unsafe { LLVMAddAttributeAtIndex(functionReference, parameterIndex, attributeRef) };
+				functionValue.setFunctionParameterAttribute(context, parameterIndex, attribute);
 			}
+			
 			parameterIndex += 1;
 		}
 		
 		for attribute in self.functionAttributes.iter()
 		{
-			let attributeRef = context.functionAttributeRef(attribute);
-			unsafe { LLVMAddAttributeAtIndex(functionReference, LLVMAttributeFunctionIndex, attributeRef) };
+			functionValue.setFunctionAttribute(context, attribute);
 		}
 		
 		for attribute in self.targetDependentFunctionAttributes.iter()
 		{
-			attribute.addToFunction(functionValue);
+			attribute.addToFunction(context, functionValue);
 		}
 		
-		unsafe { LLVMSetFunctionCallConv(functionReference, self.callingConvention as u32) };
-		
-		if let Some(ref garbageCollectorStrategy) = self.garbageCollectorStrategy
-		{
-			unsafe { LLVMSetGC(functionReference, garbageCollectorStrategy.as_ptr()) };
-		}
-		
-		unsafe { LLVMSetLinkage(functionReference, self.linkage.to_LLVMLinkage()) };
-		
-		unsafe { LLVMSetVisibility(functionReference, self.visibility.to_LLVMVisibility()) };
-		
-		if let Some(ref dllStorageClass) = self.dllStorageClass
-		{
-			unsafe { LLVMSetDLLStorageClass(functionReference, dllStorageClass.to_LLVMDLLStorageClass()) };
-		}
+		functionValue.setCallingConvention(self.callingConvention);
+		functionValue.setGarbageCollectorStrategy(&self.garbageCollectorStrategy);
+		functionValue.setLinkage(self.linkage);
+		functionValue.setVisibility(self.visibility);
+		functionValue.setDllStorageClass(self.dllStorageClass);
+		functionValue.setAlignment(self.alignment);
 		
 		if let Some(unnamedAddress) = self.unnamedAddress
 		{
@@ -151,14 +138,13 @@ impl FunctionDeclaration
 			
 			match unnamedAddress
 			{
-				UnnamedAddress => unsafe { LLVMSetUnnamedAddr(functionReference, 1) },
+				UnnamedAddress => functionValue.setUnnamedAddress(true),
 				ModuleWideLocalUnnamedAddress => panic!("local unnamed address setting is not supported at this time for function declarations (we do not know which API call to use)"),
 			}
 		}
-		
-		if let Some(alignment) = self.alignment
+		else
 		{
-			unsafe { LLVMSetAlignment(functionReference, alignment.as_u32()) };
+			functionValue.setUnnamedAddress(false)
 		}
 		
 		functionValue
