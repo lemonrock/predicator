@@ -11,6 +11,7 @@ pub enum ToggledTargetFeature
 
 impl ToggledTargetFeature
 {
+	#[inline(always)]
 	pub fn value(&self) -> &str
 	{
 		use self::ToggledTargetFeature::*;

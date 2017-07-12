@@ -12,6 +12,7 @@ pub enum GlobalFieldVariant
 
 impl GlobalFieldVariant
 {
+	#[inline(always)]
 	fn set(&self, context: &Context, globalValue: GlobalValue)
 	{
 		match *self

@@ -4,5 +4,6 @@
 
 pub trait ToReference<R: Sized>: Eq + Hash
 {
+	#[inline(always)]
 	fn toReference(&self, context: &Context) -> R;
 }

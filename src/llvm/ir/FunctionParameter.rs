@@ -12,16 +12,19 @@ pub struct FunctionParameter
 
 impl FunctionParameter
 {
+	#[inline(always)]
 	pub fn void() -> Self
 	{
 		Self::simple(LlvmType::Void)
 	}
 	
+	#[inline(always)]
 	pub fn boolean() -> Self
 	{
 		Self::simple(LlvmType::Int1)
 	}
 	
+	#[inline(always)]
 	pub fn simple(llvmType: LlvmType) -> Self
 	{
 		Self
@@ -34,6 +37,7 @@ impl FunctionParameter
 		}
 	}
 	
+	#[inline(always)]
 	pub fn wrap(llvmType: &LlvmType, attributes: HashSet<ParameterAttribute>) -> Self
 	{
 		Self
@@ -44,6 +48,7 @@ impl FunctionParameter
 		}
 	}
 	
+	#[inline(always)]
 	pub fn pointer(llvmType: &LlvmType, attributes: HashSet<ParameterAttribute>) -> Self
 	{
 		Self

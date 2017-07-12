@@ -15,6 +15,7 @@ pub struct ModuleDefinition
 
 impl ModuleDefinition
 {
+	#[inline(always)]
 	pub fn newForHost<S: Into<String> + Clone>(name: S) -> Result<Self, String>
 	{
 		let targetTriple = Target::defaultTargetTriple();

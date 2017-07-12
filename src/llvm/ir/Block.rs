@@ -14,6 +14,7 @@ pub struct Block<'a>
 
 impl<'a> Drop for Block<'a>
 {
+	#[inline(always)]
 	fn drop(&mut self)
 	{
 		self.builderReference.dispose();

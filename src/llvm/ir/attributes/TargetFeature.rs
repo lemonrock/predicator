@@ -19,6 +19,7 @@ pub enum TargetFeature
 impl TargetFeature
 {
 	//noinspection SpellCheckingInspection
+	#[inline(always)]
 	pub fn on(&self) -> &str
 	{
 		use self::TargetFeature::*;
@@ -37,6 +38,7 @@ impl TargetFeature
 	}
 	
 	//noinspection SpellCheckingInspection
+	#[inline(always)]
 	pub fn off(&self) -> &str
 	{
 		use self::TargetFeature::*;

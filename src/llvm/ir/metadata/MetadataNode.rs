@@ -7,6 +7,7 @@ pub struct MetadataNode(pub Vec<MetadataKind>);
 
 impl ToReference<MetadataNodeValue> for MetadataNode
 {
+	#[inline(always)]
 	fn toReference(&self, context: &Context) -> MetadataNodeValue
 	{
 		let mut values = Vec::with_capacity(self.0.len());
@@ -22,6 +23,7 @@ impl ToReference<MetadataNodeValue> for MetadataNode
 
 impl MetadataNode
 {
+	#[inline(always)]
 	pub fn string<S: Into<String>>(value: S) -> Self
 	{
 		MetadataNode(vec!

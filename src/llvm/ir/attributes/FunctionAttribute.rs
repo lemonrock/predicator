@@ -51,6 +51,7 @@ pub enum FunctionAttribute
 impl ToReference<LLVMAttributeRef> for FunctionAttribute
 {
 	//noinspection SpellCheckingInspection
+	#[inline(always)]
 	fn toReference(&self, context: &Context) -> LLVMAttributeRef
 	{
 		use self::FunctionAttribute::*;

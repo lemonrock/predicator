@@ -7,6 +7,7 @@ pub struct LLVMValueRefWrapper(LLVMValueRef);
 
 impl Debug for LLVMValueRefWrapper
 {
+	#[inline(always)]
 	fn fmt(&self, f: &mut Formatter) -> Result<(), fmt::Error>
 	{
 		write!(f, "LLVMValueRefWrapper({:?}={:?})", self.0, self.toString())

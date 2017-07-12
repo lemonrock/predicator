@@ -31,6 +31,7 @@ pub enum TypeBasedAliasAnalysisNode
 
 impl TypeBasedAliasAnalysisNode
 {
+	#[inline(always)]
 	pub fn toMetadataNode(&self) -> MetadataNode
 	{
 		use self::TypeBasedAliasAnalysisNode::*;

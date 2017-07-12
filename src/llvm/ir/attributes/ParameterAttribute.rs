@@ -30,6 +30,7 @@ pub enum ParameterAttribute
 impl ToReference<LLVMAttributeRef> for ParameterAttribute
 {
 	//noinspection SpellCheckingInspection
+	#[inline(always)]
 	fn toReference(&self, context: &Context) -> LLVMAttributeRef
 	{
 		use self::ParameterAttribute::*;

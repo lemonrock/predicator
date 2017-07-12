@@ -91,16 +91,16 @@ impl Module
 	}
 	
 	#[inline(always)]
+	pub fn addGlobalField(&self, context: &Context, globalFieldDefinition: &GlobalFieldDefinition) -> GlobalValue
+	{
+		globalFieldDefinition.create(context, self)
+	}
+	
+	#[inline(always)]
 	pub fn addMetadata(&self, context: &Context, key: &str, metadata: &MetadataNode)
 	{
 		let key = CString::new(key).unwrap();
 		unsafe { LLVMAddNamedMetadataOperand(self.reference, key.as_ptr(), context.metadataNode(metadata).asLLVMValueRef()) }
-	}
-	
-	#[inline(always)]
-	pub fn addGlobalField(&self, context: &Context, globalFieldDefinition: &GlobalFieldDefinition) -> GlobalValue
-	{
-		globalFieldDefinition.create(context, self)
 	}
 	
 	#[inline(always)]

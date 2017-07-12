@@ -15,6 +15,7 @@ pub enum CallParameterAttribute
 impl ToReference<LLVMAttributeRef> for CallParameterAttribute
 {
 	//noinspection SpellCheckingInspection
+	#[inline(always)]
 	fn toReference(&self, context: &Context) -> LLVMAttributeRef
 	{
 		use self::CallParameterAttribute::*;

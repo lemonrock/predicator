@@ -71,6 +71,7 @@ pub enum EnumAttributeName
 
 impl EnumAttributeName
 {
+	#[inline(always)]
 	pub fn identifier(self) -> EnumAttributeIdentifier
 	{
 		let name = self.cString();
@@ -78,6 +79,7 @@ impl EnumAttributeName
 	}
 	
 	//noinspection SpellCheckingInspection
+	#[inline(always)]
 	fn cString(self) -> &'static [u8]
 	{
 		use self::EnumAttributeName::*;

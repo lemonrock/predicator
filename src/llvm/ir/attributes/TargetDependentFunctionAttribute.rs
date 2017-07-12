@@ -101,6 +101,7 @@ impl TargetDependentFunctionAttribute
 		TargetDependentFunctionAttribute::StringFeatures(b"target-features", features)
 	}
 	
+	#[inline(always)]
 	pub(crate) fn addToFunction(&self, context: &Context, functionValue: FunctionValue)
 	{
 		use self::TargetDependentFunctionAttribute::*;

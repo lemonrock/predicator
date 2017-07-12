@@ -19,6 +19,7 @@ pub struct GlobalFieldDefinition
 
 impl GlobalFieldDefinition
 {
+	#[inline(always)]
 	pub fn internalConstant<S: Into<String>>(name: S, alignment: PowerOfTwoThirtyTwoBit, value: Constant) -> Self
 	{
 		Self

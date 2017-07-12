@@ -147,33 +147,39 @@ impl Context
 		value
 	}
 	
+	#[inline(always)]
 	pub fn typeBasedAliasAnalysisNode(&self, typeBasedAliasAnalysisNode: &TypeBasedAliasAnalysisNode) -> TypeBasedAliasAnalysisNodeValue
 	{
 		self.metadataNode(&typeBasedAliasAnalysisNode.toMetadataNode()).toTypeBasedAliasAnalysisNodeValue()
 	}
 	
+	#[inline(always)]
 	pub fn metadataNode(&self, metadataNode: &MetadataNode) -> MetadataNodeValue
 	{
 		self.metadataNodeCache.getOrAdd(metadataNode, self)
 	}
 	
+	#[inline(always)]
 	pub fn callParameterAttributeRef(&self, attribute: &CallParameterAttribute) -> LLVMAttributeRef
 	{
 		self.callParameterAttributeCache.getOrAdd(attribute, self)
 	}
 	
+	#[inline(always)]
 	pub fn functionAttributeRef(&self, attribute: &FunctionAttribute) -> LLVMAttributeRef
 	{
 		self.functionAttributeCache.getOrAdd(attribute, self)
 	}
 	
 	// LLVMAddTargetDependentFunctionAttr is deprecated
+	#[inline(always)]
 	pub(crate) fn LLVMAddTargetDependentFunctionAttr(&self, functionValue: FunctionValue, name: &[u8], value: Option<&[u8]>)
 	{
 		let attributeRef = self.stringAttribute(name, value);
 		functionValue.setAttribute(LLVMAttributeFunctionIndex, attributeRef)
 	}
 	
+	#[inline(always)]
 	pub fn parameterAttributeRef(&self, attribute: &ParameterAttribute) -> LLVMAttributeRef
 	{
 		self.parameterAttributeCache.getOrAdd(attribute, self)
@@ -197,7 +203,6 @@ impl Context
 		unsafe { LLVMGetMDKindIDInContext(self.reference, name.as_ptr() as *const _, name.len() as u32) }
 	}
 	
-	#[inline(always)]
 	pub fn createModule(&self, name: &str, identifier: &str, targetTriple: &CStr, targetMachineDataLayout: &TargetMachineDataLayout, inlineAssembler: Option<&str>) -> Result<Module, String>
 	{
 		let cName = CString::new(name).expect("name contains embedded NULs");
