@@ -38,13 +38,7 @@ impl TypeBasedAliasAnalysisNode
 		
 		match *self
 		{
-			Root =>
-			{
-				MetadataNode(vec!
-				[
-					MetadataKind::string("Simple C/C++ TBAA")
-				])
-			}
+			Root => MetadataNode::string("Simple C/C++ TBAA"),
 			
 			Scalar { ref name, ref parent, ref isConstant } =>
 			{

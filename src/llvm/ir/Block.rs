@@ -57,12 +57,6 @@ impl<'a> Block<'a>
 	}
 	
 	#[inline(always)]
-	pub fn namedChild(&self, childName: &str) -> Block<'a>
-	{
-		Self::create(format!("{}.{}", &self.name, childName), self.context, self.functionValue)
-	}
-	
-	#[inline(always)]
 	pub fn child(&self) -> Block<'a>
 	{
 		Self::create(self.nextValueName(), self.context, self.functionValue)
@@ -102,9 +96,9 @@ impl<'a> Block<'a>
 	}
 	
 	#[inline(always)]
-	pub fn unconditionalBranchToChild(&self, childName: &str) -> Block<'a>
+	pub fn unconditionalBranchToChild(&self) -> Block<'a>
 	{
-		let child = self.namedChild(childName);
+		let child = self.child();
 		self.unconditionalBranch(&child);
 		child
 	}
@@ -122,47 +116,45 @@ impl<'a> Block<'a>
 	}
 	
 	#[inline(always)]
-	pub fn phi(&self, llvmType: &LlvmType, named: &str) -> PhiInstructionValue
+	pub fn phi(&self, typeRef: LLVMTypeRef) -> PhiInstructionValue
 	{
-		self.builderReference.phi(self.typeRef(llvmType), Some(&CString::new(named).unwrap()))
+		self.builderReference.phi(typeRef)
 	}
 	
 	#[inline(always)]
 	pub fn bitcastPointerToInt8Pointer(&self, pointerValue: PointerValue) -> PointerValue
 	{
-		self.builderReference.bitcastPointerToInt8Pointer(self.context, pointerValue, None)
+		self.builderReference.bitcastPointerToInt8Pointer(self.context, pointerValue)
 	}
 	
 	#[inline(always)]
-	pub fn arithmetic<LHS: ToLLVMValueRefWrapper, RHS: ToLLVMValueRefWrapper>(&self, leftHandSide: LHS, operation: BinaryArithmetic, rightHandSide: RHS, named: &str) -> LLVMValueRefWrapper
+	pub fn arithmetic<LHS: ToLLVMValueRefWrapper, RHS: ToLLVMValueRefWrapper>(&self, leftHandSide: LHS, operation: BinaryArithmetic, rightHandSide: RHS) -> LLVMValueRefWrapper
 	{
-		operation.operate(self.builderReference, self.toLLVMValueRefWrapper(leftHandSide), self.toLLVMValueRefWrapper(rightHandSide), Some(&CString::new(named).unwrap()))
+		operation.operate(self.builderReference, self.toLLVMValueRefWrapper(leftHandSide), self.toLLVMValueRefWrapper(rightHandSide))
 	}
 	
 	#[inline(always)]
 	pub fn invert<V: ToLLVMValueRefWrapper>(&self, operation: UnaryArithmetic, value: V) -> LLVMValueRefWrapper
 	{
-		operation.operate(self.builderReference, self.toLLVMValueRefWrapper(value), None)
+		operation.operate(self.builderReference, self.toLLVMValueRefWrapper(value))
 	}
 	
 	#[inline(always)]
-	pub fn increment<V: Value>(&self, original: V, increment: u64, named: &str) -> LLVMValueRefWrapper
+	pub fn increment<V: Value>(&self, original: V, increment: u64) -> LLVMValueRefWrapper
 	{
-		self.arithmetic(original, BinaryArithmetic::Add, increment, named)
+		self.arithmetic(original, BinaryArithmetic::Add, increment)
 	}
 	
 	#[inline(always)]
-	pub fn getElementPointerAtArrayIndex<V: ToLLVMValueRefWrapper>(&self, named: &str, pointerValue: PointerValue, arrayIndexInt64: V) -> PointerValue
+	pub fn getElementPointerAtArrayIndex<V: ToLLVMValueRefWrapper>(&self, pointerValue: PointerValue, arrayIndexInt64: V) -> PointerValue
 	{
-		let named = format!("{}_pointer_at_array_index", named);
-		self.builderReference.getElementPointerAtArrayIndex(pointerValue, arrayIndexInt64.toLLVMValueRefWrapper(self.context), Some(&CString::new(named).unwrap()))
+		self.builderReference.getElementPointerAtArrayIndex(pointerValue, arrayIndexInt64.toLLVMValueRefWrapper(self.context))
 	}
 	
 	#[inline(always)]
-	pub fn pointerToStructField(&self, named: &str, pointerValue: PointerValue, fieldIndex: u32) -> PointerValue
+	pub fn pointerToStructField(&self, pointerValue: PointerValue, fieldIndex: u32) -> PointerValue
 	{
-		let named = format!("{}_pointer", named);
-		self.builderReference.getElementPointerAtArrayIndexFieldIndex(pointerValue, self.integer64BitUnsigned(0), self.integer32BitUnsigned(fieldIndex), Some(&CString::new(named).unwrap()))
+		self.builderReference.getElementPointerAtArrayIndexFieldIndex(pointerValue, self.context.constantZeroInteger64BitUnsigned(), self.integer32BitUnsigned(fieldIndex))
 	}
 	
 	#[inline(always)]
@@ -172,29 +164,29 @@ impl<'a> Block<'a>
 	}
 	
 	#[inline(always)]
-	pub fn loadValue(&self, named: &str, arrayPointer: PointerValue, offsetIntoBaseType: u64, from: TypeBasedAliasAnalysisNode, to: TypeBasedAliasAnalysisNode, alignment: PowerOfTwoThirtyTwoBit) -> LLVMValueRefWrapper
+	pub fn loadValue(&self, arrayPointer: PointerValue, offsetIntoBaseType: u64, from: TypeBasedAliasAnalysisNode, to: TypeBasedAliasAnalysisNode, alignment: PowerOfTwoThirtyTwoBit) -> LLVMValueRefWrapper
 	{
-		self.builderReference.load(self.context, arrayPointer, Self::path(offsetIntoBaseType, from, to), Some(alignment), Some(&CString::new(named).unwrap()))
+		self.builderReference.load(self.context, arrayPointer, Self::path(offsetIntoBaseType, from, to), Some(alignment))
 	}
 	
 	#[inline(always)]
-	pub fn comparison<LHS: ToLLVMValueRefWrapper, RHS: ToLLVMValueRefWrapper>(&self, leftHandSide: LHS, predicate: LLVMIntPredicate, rightHandSide: RHS, named: &str) -> ComparisonResultValue
+	pub fn comparison<LHS: ToLLVMValueRefWrapper, RHS: ToLLVMValueRefWrapper>(&self, leftHandSide: LHS, predicate: LLVMIntPredicate, rightHandSide: RHS) -> ComparisonResultValue
 	{
-		self.builderReference.integerComparison(self.toLLVMValueRefWrapper(leftHandSide), predicate, self.toLLVMValueRefWrapper(rightHandSide), Some(&CString::new(named).unwrap()))
+		self.builderReference.integerComparison(self.toLLVMValueRefWrapper(leftHandSide), predicate, self.toLLVMValueRefWrapper(rightHandSide))
 	}
 	
 	#[inline(always)]
-	pub fn ifInteger<LHS: ToLLVMValueRefWrapper, RHS: ToLLVMValueRefWrapper>(&self, leftHandSide: LHS, predicate: LLVMIntPredicate, rightHandSide: RHS, ifName: &str, thenName: &str, elseName: &str) -> (ComparisonResultValue, Block<'a>, Block<'a>)
+	pub fn ifInteger<LHS: ToLLVMValueRefWrapper, RHS: ToLLVMValueRefWrapper>(&self, leftHandSide: LHS, predicate: LLVMIntPredicate, rightHandSide: RHS) -> (ComparisonResultValue, Block<'a>, Block<'a>)
 	{
-		let thenBlock = self.namedChild(thenName);
-		let elseBlock = self.namedChild(elseName);
-		(self.comparison(leftHandSide, predicate,rightHandSide, ifName), thenBlock, elseBlock)
+		let thenBlock = self.child();
+		let elseBlock = self.child();
+		(self.comparison(leftHandSide, predicate,rightHandSide), thenBlock, elseBlock)
 	}
 	
 	#[inline(always)]
 	pub fn ifFalseCarryOn<TrueToBlockReference: ToLLVMBasicBlockRef>(&self, isTrue: ComparisonResultValue, ifTrueBlock: &TrueToBlockReference) -> Block<'a>
 	{
-		let carryOnBlock = self.namedChild("carryOn");
+		let carryOnBlock = self.child();
 		self.conditionalBranch(isTrue, ifTrueBlock, &carryOnBlock);
 		carryOnBlock
 	}
@@ -204,14 +196,14 @@ impl<'a> Block<'a>
 	{
 		let arguments =
 		[
-			(toInt8PointerValue.asLLVMValueRefWrapper(), None),
-			(fromInt8PointerValue.asLLVMValueRefWrapper(), None),
-			(self.integer64BitUnsigned(numberOfBytesToCopy).asLLVMValueRefWrapper(), None),
-			(self.integer32BitUnsigned(alignment.as_u32()).asLLVMValueRefWrapper(), None),
-			(self.boolean(isVolatile).asLLVMValueRefWrapper(), None),
+			(toInt8PointerValue.asLLVMValueRef(), None),
+			(fromInt8PointerValue.asLLVMValueRef(), None),
+			(self.integer64BitUnsigned(numberOfBytesToCopy).asLLVMValueRef(), None),
+			(self.integer32BitUnsigned(alignment.as_u32()).asLLVMValueRef(), None),
+			(self.boolean(isVolatile).asLLVMValueRef(), None),
 		];
 		
-		self.builderReference.call(self.context, functionReference, TailCall::Tail, &HashSet::default(), UsefulLLVMCallConv::LLVMCCallConv, None, &arguments, None);
+		self.builderReference.call(self.context, functionReference, TailCall::Tail, &HashSet::default(), UsefulLLVMCallConv::LLVMCCallConv, None, &arguments);
 		
 		//  For each group of three, the first operand gives the byte offset of a field in bytes, the second gives its size in bytes, and the third gives its tbaa tag
 		// TBAA tag is the from/to/offset/is-constant, ie !tbaa, ie TypeBasedAliasAnalysisNode::path(offsetIntoBaseType, from, to)
@@ -225,26 +217,24 @@ impl<'a> Block<'a>
 	}
 	
 	#[inline(always)]
-	pub fn loadPointer(&self, named: &str, arrayPointer: PointerValue, offsetIntoBaseType: u64, from: TypeBasedAliasAnalysisNode) -> PointerValue
+	pub fn loadPointer(&self, arrayPointer: PointerValue, offsetIntoBaseType: u64, from: TypeBasedAliasAnalysisNode) -> PointerValue
 	{
-		PointerValue::fromLLVMValueRefWrapper(self.loadValue(named, arrayPointer, offsetIntoBaseType, from, TypeBasedAliasAnalysisNode::any_pointer(), Self::PointerAlignment))
+		PointerValue::fromLLVMValueRefWrapper(self.loadValue(arrayPointer, offsetIntoBaseType, from, TypeBasedAliasAnalysisNode::any_pointer(), Self::PointerAlignment))
 	}
 	
 	#[inline(always)]
-	pub fn loadValueFromReferencedStructField(&self, named: &str, pointerValue: PointerValue, fieldIndex: u32, offsetIntoBaseType: u64, from: TypeBasedAliasAnalysisNode, to: TypeBasedAliasAnalysisNode, valueAlignment: PowerOfTwoThirtyTwoBit) -> (LLVMValueRefWrapper, PointerValue)
+	pub fn loadValueFromReferencedStructField(&self, pointerValue: PointerValue, fieldIndex: u32, offsetIntoBaseType: u64, from: TypeBasedAliasAnalysisNode, to: TypeBasedAliasAnalysisNode, valueAlignment: PowerOfTwoThirtyTwoBit) -> (LLVMValueRefWrapper, PointerValue)
 	{
-		let named = format!("{}_value", named);
-		let arrayPointer = self.pointerToStructField(&named, pointerValue, fieldIndex);
-		let loadedValue = self.loadValue(&named, arrayPointer, offsetIntoBaseType, from, to, valueAlignment);
+		let arrayPointer = self.pointerToStructField(pointerValue, fieldIndex);
+		let loadedValue = self.loadValue(arrayPointer, offsetIntoBaseType, from, to, valueAlignment);
 		(loadedValue, arrayPointer)
 	}
 	
 	#[inline(always)]
-	pub fn loadPointerFromReferencedStructField(&self, named: &str, pointerValue: PointerValue, fieldIndex: u32, offsetIntoBaseType: u64, from: TypeBasedAliasAnalysisNode) -> (PointerValue, PointerValue)
+	pub fn loadPointerFromReferencedStructField(&self, pointerValue: PointerValue, fieldIndex: u32, offsetIntoBaseType: u64, from: TypeBasedAliasAnalysisNode) -> (PointerValue, PointerValue)
 	{
-		let named = format!("{}_pointer", named);
-		let arrayPointer = self.pointerToStructField(&named, pointerValue, fieldIndex);
-		let loadedPointer = self.loadPointer(&named, arrayPointer, offsetIntoBaseType, from);
+		let arrayPointer = self.pointerToStructField(pointerValue, fieldIndex);
+		let loadedPointer = self.loadPointer(arrayPointer, offsetIntoBaseType, from);
 		(loadedPointer, arrayPointer)
 	}
 	
@@ -255,50 +245,48 @@ impl<'a> Block<'a>
 	}
 	
 	#[inline(always)]
+	fn booleanTrue(&self) -> LLVMValueRef
+	{
+		self.context.constantBooleanTrue()
+	}
+	
+	#[inline(always)]
+	fn booleanFalse(&self) -> LLVMValueRef
+	{
+		self.context.constantBooleanFalse()
+	}
+	
+	#[inline(always)]
+	fn boolean(&self, value: bool) -> LLVMValueRef
+	{
+		if value
+		{
+			self.booleanTrue()
+		}
+		else
+		{
+			self.booleanFalse()
+		}
+	}
+	
+	#[inline(always)]
+	fn integer32BitUnsigned(&self, value: u32) -> LLVMValueRef
+	{
+		self.context.constantInteger32BitUnsigned(value)
+	}
+	
+	#[inline(always)]
+	fn integer64BitUnsigned(&self, value: u64) -> LLVMValueRef
+	{
+		self.context.constantInteger64BitUnsigned(value)
+	}
+	
+	
+	
+	
+	#[inline(always)]
 	fn toLLVMValueRefWrapper<V: ToLLVMValueRefWrapper>(&self, value: V) -> LLVMValueRefWrapper
 	{
 		value.toLLVMValueRefWrapper(self.context)
-	}
-	
-	#[inline(always)]
-	fn typeRef(&self, llvmType: &LlvmType) -> LLVMTypeRefWrapper
-	{
-		self.context.typeRef(llvmType)
-	}
-	
-	#[inline(always)]
-	fn constant(&self, constant: &Constant) -> ConstantValue
-	{
-		self.context.constant(constant)
-	}
-	
-	#[inline(always)]
-	fn booleanTrue(&self) -> ConstantValue
-	{
-		self.constant(&Constant::True)
-	}
-	
-	#[inline(always)]
-	fn booleanFalse(&self) -> ConstantValue
-	{
-		self.constant(&Constant::False)
-	}
-	
-	#[inline(always)]
-	fn boolean(&self, value: bool) -> ConstantValue
-	{
-		self.constant(&Constant::boolean(value))
-	}
-	
-	#[inline(always)]
-	fn integer32BitUnsigned(&self, value: u32) -> ConstantValue
-	{
-		self.constant(&Constant::integer32BitUnsigned(value))
-	}
-	
-	#[inline(always)]
-	fn integer64BitUnsigned(&self, value: u64) -> ConstantValue
-	{
-		self.constant(&Constant::integer64BitUnsigned(value))
 	}
 }

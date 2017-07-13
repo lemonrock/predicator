@@ -36,44 +36,43 @@ pub enum BinaryArithmetic
 impl BinaryArithmetic
 {
 	#[inline(always)]
-	pub(crate) fn operate<LHS: Value, RHS: Value>(&self, builderReference: LLVMBuilderRef, leftHandSide: LHS, rightHandSide: RHS, name: Option<&CStr>) -> LLVMValueRefWrapper
+	pub(crate) fn operate<LHS: Value, RHS: Value>(&self, builderReference: LLVMBuilderRef, leftHandSide: LHS, rightHandSide: RHS) -> LLVMValueRefWrapper
 	{
 		use self::BinaryArithmetic::*;
 		
 		let leftHandSide = leftHandSide.asLLVMValueRef();
 		let rightHandSide = rightHandSide.asLLVMValueRef();
-		let name = name.nameOrEmptyPointer();
 		
 		let value = unsafe
 		{
 			match *self
 			{
-				Add => LLVMBuildAdd(builderReference, leftHandSide, rightHandSide, name),
-				NSWAdd => LLVMBuildNSWAdd(builderReference, leftHandSide, rightHandSide, name),
-				NUWAdd => LLVMBuildNUWAdd(builderReference, leftHandSide, rightHandSide, name),
-				FAdd => LLVMBuildFAdd(builderReference, leftHandSide, rightHandSide, name),
-				Sub => LLVMBuildSub(builderReference, leftHandSide, rightHandSide, name),
-				NSWSub => LLVMBuildNSWSub(builderReference, leftHandSide, rightHandSide, name),
-				NUWSub => LLVMBuildNUWSub(builderReference, leftHandSide, rightHandSide, name),
-				FSub => LLVMBuildFSub(builderReference, leftHandSide, rightHandSide, name),
-				Mul => LLVMBuildMul(builderReference, leftHandSide, rightHandSide, name),
-				NSWMul => LLVMBuildNSWMul(builderReference, leftHandSide, rightHandSide, name),
-				NUWMul => LLVMBuildNUWMul(builderReference, leftHandSide, rightHandSide, name),
-				FMul => LLVMBuildFMul(builderReference, leftHandSide, rightHandSide, name),
-				UDiv => LLVMBuildUDiv(builderReference, leftHandSide, rightHandSide, name),
-				ExactUDiv => LLVMBuildExactUDiv(builderReference, leftHandSide, rightHandSide, name),
-				SDiv => LLVMBuildSDiv(builderReference, leftHandSide, rightHandSide, name),
-				ExactSDiv => LLVMBuildExactSDiv(builderReference, leftHandSide, rightHandSide, name),
-				FDiv => LLVMBuildFDiv(builderReference, leftHandSide, rightHandSide, name),
-				URem => LLVMBuildURem(builderReference, leftHandSide, rightHandSide, name),
-				SRem => LLVMBuildSRem(builderReference, leftHandSide, rightHandSide, name),
-				FRem => LLVMBuildFRem(builderReference, leftHandSide, rightHandSide, name),
-				Shl => LLVMBuildShl(builderReference, leftHandSide, rightHandSide, name),
-				LShr => LLVMBuildLShr(builderReference, leftHandSide, rightHandSide, name),
-				AShr => LLVMBuildAShr(builderReference, leftHandSide, rightHandSide, name),
-				And => LLVMBuildAnd(builderReference, leftHandSide, rightHandSide, name),
-				Or => LLVMBuildOr(builderReference, leftHandSide, rightHandSide, name),
-				Xor => LLVMBuildXor(builderReference, leftHandSide, rightHandSide, name),
+				Add => LLVMBuildAdd(builderReference, leftHandSide, rightHandSide, emptyName!()),
+				NSWAdd => LLVMBuildNSWAdd(builderReference, leftHandSide, rightHandSide, emptyName!()),
+				NUWAdd => LLVMBuildNUWAdd(builderReference, leftHandSide, rightHandSide, emptyName!()),
+				FAdd => LLVMBuildFAdd(builderReference, leftHandSide, rightHandSide, emptyName!()),
+				Sub => LLVMBuildSub(builderReference, leftHandSide, rightHandSide, emptyName!()),
+				NSWSub => LLVMBuildNSWSub(builderReference, leftHandSide, rightHandSide, emptyName!()),
+				NUWSub => LLVMBuildNUWSub(builderReference, leftHandSide, rightHandSide, emptyName!()),
+				FSub => LLVMBuildFSub(builderReference, leftHandSide, rightHandSide, emptyName!()),
+				Mul => LLVMBuildMul(builderReference, leftHandSide, rightHandSide, emptyName!()),
+				NSWMul => LLVMBuildNSWMul(builderReference, leftHandSide, rightHandSide, emptyName!()),
+				NUWMul => LLVMBuildNUWMul(builderReference, leftHandSide, rightHandSide, emptyName!()),
+				FMul => LLVMBuildFMul(builderReference, leftHandSide, rightHandSide, emptyName!()),
+				UDiv => LLVMBuildUDiv(builderReference, leftHandSide, rightHandSide, emptyName!()),
+				ExactUDiv => LLVMBuildExactUDiv(builderReference, leftHandSide, rightHandSide, emptyName!()),
+				SDiv => LLVMBuildSDiv(builderReference, leftHandSide, rightHandSide, emptyName!()),
+				ExactSDiv => LLVMBuildExactSDiv(builderReference, leftHandSide, rightHandSide, emptyName!()),
+				FDiv => LLVMBuildFDiv(builderReference, leftHandSide, rightHandSide, emptyName!()),
+				URem => LLVMBuildURem(builderReference, leftHandSide, rightHandSide, emptyName!()),
+				SRem => LLVMBuildSRem(builderReference, leftHandSide, rightHandSide, emptyName!()),
+				FRem => LLVMBuildFRem(builderReference, leftHandSide, rightHandSide, emptyName!()),
+				Shl => LLVMBuildShl(builderReference, leftHandSide, rightHandSide, emptyName!()),
+				LShr => LLVMBuildLShr(builderReference, leftHandSide, rightHandSide, emptyName!()),
+				AShr => LLVMBuildAShr(builderReference, leftHandSide, rightHandSide, emptyName!()),
+				And => LLVMBuildAnd(builderReference, leftHandSide, rightHandSide, emptyName!()),
+				Or => LLVMBuildOr(builderReference, leftHandSide, rightHandSide, emptyName!()),
+				Xor => LLVMBuildXor(builderReference, leftHandSide, rightHandSide, emptyName!()),
 			}
 		};
 		LLVMValueRefWrapper::fromLLVMValueRef(value)

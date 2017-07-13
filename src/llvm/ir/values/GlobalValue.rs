@@ -62,6 +62,12 @@ impl GlobalValue
 	}
 	
 	#[inline(always)]
+	pub fn setIsUnnamedAddress(&self)
+	{
+		unsafe { LLVMSetUnnamedAddr(self.reference(), 1) };
+	}
+	
+	#[inline(always)]
 	pub fn setAlignment(&self, alignment: PowerOfTwoThirtyTwoBit)
 	{
 		unsafe { LLVMSetAlignment(self.reference(), alignment.as_u32()) };
@@ -94,6 +100,13 @@ impl GlobalValue
 	}
 	
 	#[inline(always)]
+	pub fn setIsInternallyInitializedFast(&self, constantInitializer: LLVMValueRef)
+	{
+		unsafe { LLVMSetExternallyInitialized(self.reference(), 0) };
+		self.setInitializerFast(constantInitializer);
+	}
+	
+	#[inline(always)]
 	pub fn setIsExternallyInitialized(&self)
 	{
 		unsafe { LLVMSetExternallyInitialized(self.reference(), 1) };
@@ -103,6 +116,12 @@ impl GlobalValue
 	fn setInitializer(&self, context: &Context, constantInitializer: &Constant)
 	{
 		unsafe { LLVMSetInitializer(self.reference(), context.constant(constantInitializer).asLLVMValueRef()) };
+	}
+	
+	#[inline(always)]
+	fn setInitializerFast(&self, constantInitializer: LLVMValueRef)
+	{
+		unsafe { LLVMSetInitializer(self.reference(), constantInitializer) };
 	}
 	
 	#[inline(always)]

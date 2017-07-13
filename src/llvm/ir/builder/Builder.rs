@@ -11,42 +11,42 @@ pub(crate) trait Builder
 	fn positionAtEndOfBasicBlock<ToBlockReference: ToLLVMBasicBlockRef>(self, basicBlockReference: ToBlockReference);
 	
 	#[inline(always)]
-	fn returnVoid(self) -> TerminatorValue;
+	fn returnVoid(self);
 	
 	#[inline(always)]
-	fn returnValue<V: Value>(self, value: V) -> TerminatorValue;
+	fn returnValue<V: Value>(self, value: V);
 	
 	#[inline(always)]
-	fn unconditionalBranch<ToBlockReference: ToLLVMBasicBlockRef>(self, to: &ToBlockReference) -> TerminatorValue;
+	fn unconditionalBranch<ToBlockReference: ToLLVMBasicBlockRef>(self, to: &ToBlockReference);
 	
 	#[inline(always)]
-	fn conditionalBranch<ThenToBlockReference: ToLLVMBasicBlockRef, ElseToBlockReference: ToLLVMBasicBlockRef>(self, ifConditional: ComparisonResultValue, thenBlock: &ThenToBlockReference, elseBlock: &ElseToBlockReference) -> TerminatorValue;
+	fn conditionalBranch<ThenToBlockReference: ToLLVMBasicBlockRef, ElseToBlockReference: ToLLVMBasicBlockRef>(self, ifConditional: ComparisonResultValue, thenBlock: &ThenToBlockReference, elseBlock: &ElseToBlockReference);
 	
 	#[inline(always)]
-	fn switchBranch<V: Value, DefaultToBlockReference: ToLLVMBasicBlockRef, CaseToBlockReference: ToLLVMBasicBlockRef>(self, context: &Context, switchOnValue: V, defaultBlock: &DefaultToBlockReference, caseBlocks: &[(u8, CaseToBlockReference)]) -> TerminatorValue;
+	fn switchBranch<V: Value, DefaultToBlockReference: ToLLVMBasicBlockRef, CaseToBlockReference: ToLLVMBasicBlockRef>(self, context: &Context, switchOnValue: V, defaultBlock: &DefaultToBlockReference, caseBlocks: &[(u8, CaseToBlockReference)]);
 	
 	#[inline(always)]
-	fn phi(self, typeReference: LLVMTypeRefWrapper, name: Option<&CStr>) -> PhiInstructionValue;
+	fn phi(self, typeReference: LLVMTypeRef) -> PhiInstructionValue;
 	
 	#[inline(always)]
-	fn bitcastPointerToInt8Pointer(self, context: &Context, pointerValue: PointerValue, name: Option<&CStr>) -> PointerValue;
+	fn bitcastPointerToInt8Pointer(self, context: &Context, pointerValue: PointerValue) -> PointerValue;
 	
 	#[inline(always)]
-	fn getElementPointerAtArrayIndex<ArrayIndex: Value>(self, arrayPointer: PointerValue, arrayIndexInt64: ArrayIndex, name: Option<&CStr>) -> PointerValue;
+	fn getElementPointerAtArrayIndex<ArrayIndex: Value>(self, arrayPointer: PointerValue, arrayIndexInt64: ArrayIndex) -> PointerValue;
 	
 	#[inline(always)]
-	fn getElementPointerAtArrayIndexFieldIndex<ArrayIndex: Value, FieldIndex: Value>(self, arrayPointer: PointerValue, arrayIndexInt64: ArrayIndex, fieldIndexInt32: FieldIndex, name: Option<&CStr>) -> PointerValue;
+	fn getElementPointerAtArrayIndexFieldIndex<ArrayIndex: Value, FieldIndex: Value>(self, arrayPointer: PointerValue, arrayIndexInt64: ArrayIndex, fieldIndexInt32: FieldIndex) -> PointerValue;
 	
 	#[inline(always)]
 	fn store(self, context: &Context, into: PointerValue, value: LLVMValueRefWrapper, typeBasedAliasAnalysisNode: Option<TypeBasedAliasAnalysisNode>, alignment: Option<PowerOfTwoThirtyTwoBit>) -> LLVMValueRefWrapper;
 	
 	#[inline(always)]
-	fn load(self, context: &Context, from: PointerValue, typeBasedAliasAnalysisNode: Option<TypeBasedAliasAnalysisNode>, alignment: Option<PowerOfTwoThirtyTwoBit>, name: Option<&CStr>) -> LLVMValueRefWrapper;
+	fn load(self, context: &Context, from: PointerValue, typeBasedAliasAnalysisNode: Option<TypeBasedAliasAnalysisNode>, alignment: Option<PowerOfTwoThirtyTwoBit>) -> LLVMValueRefWrapper;
 	
 	#[inline(always)]
-	fn integerComparison(self, leftHandSide: LLVMValueRefWrapper, operation: LLVMIntPredicate, rightHandSide: LLVMValueRefWrapper, name: Option<&CStr>) -> ComparisonResultValue;
+	fn integerComparison(self, leftHandSide: LLVMValueRefWrapper, operation: LLVMIntPredicate, rightHandSide: LLVMValueRefWrapper) -> ComparisonResultValue;
 	
-	fn call(self, context: &Context, functionReference: FunctionValue, tailCall: TailCall, functionAttributes: &HashSet<FunctionAttribute>, callingConvention: UsefulLLVMCallConv, returns: Option<&CallParameter>, arguments: &[(LLVMValueRefWrapper, Option<&CallParameter>)], name: Option<&CStr>) -> CallValue;
+	fn call(self, context: &Context, functionReference: FunctionValue, tailCall: TailCall, functionAttributes: &HashSet<FunctionAttribute>, callingConvention: UsefulLLVMCallConv, returns: Option<&CallParameter>, arguments: &[(LLVMValueRef, Option<&CallParameter>)]) -> CallValue;
 }
 
 impl Builder for LLVMBuilderRef
@@ -64,67 +64,66 @@ impl Builder for LLVMBuilderRef
 	}
 	
 	#[inline(always)]
-	fn returnVoid(self) -> TerminatorValue
+	fn returnVoid(self)
 	{
-		TerminatorValue::fromLLVMValueRef(unsafe { LLVMBuildRetVoid(self) })
+		unsafe { LLVMBuildRetVoid(self) };
 	}
 	
 	#[inline(always)]
-	fn returnValue<V: Value>(self, value: V) -> TerminatorValue
+	fn returnValue<V: Value>(self, value: V)
 	{
-		TerminatorValue::fromLLVMValueRef(unsafe { LLVMBuildRet(self, value.asLLVMValueRef()) })
+		unsafe { LLVMBuildRet(self, value.asLLVMValueRef()) };
 	}
 	
 	#[inline(always)]
-	fn unconditionalBranch<ToBlockReference: ToLLVMBasicBlockRef>(self, to: &ToBlockReference) -> TerminatorValue
+	fn unconditionalBranch<ToBlockReference: ToLLVMBasicBlockRef>(self, to: &ToBlockReference)
 	{
-		TerminatorValue::fromLLVMValueRef(unsafe { LLVMBuildBr(self, to.toLLVMBasicBlockRef()) })
+		unsafe { LLVMBuildBr(self, to.toLLVMBasicBlockRef()) };
 	}
 	
 	#[inline(always)]
-	fn conditionalBranch<ThenToBlockReference: ToLLVMBasicBlockRef, ElseToBlockReference: ToLLVMBasicBlockRef>(self, ifConditional: ComparisonResultValue, thenBlock: &ThenToBlockReference, elseBlock: &ElseToBlockReference) -> TerminatorValue
+	fn conditionalBranch<ThenToBlockReference: ToLLVMBasicBlockRef, ElseToBlockReference: ToLLVMBasicBlockRef>(self, ifConditional: ComparisonResultValue, thenBlock: &ThenToBlockReference, elseBlock: &ElseToBlockReference)
 	{
-		TerminatorValue::fromLLVMValueRef(unsafe { LLVMBuildCondBr(self, ifConditional.asLLVMValueRef(), thenBlock.toLLVMBasicBlockRef(), elseBlock.toLLVMBasicBlockRef()) })
+		unsafe { LLVMBuildCondBr(self, ifConditional.asLLVMValueRef(), thenBlock.toLLVMBasicBlockRef(), elseBlock.toLLVMBasicBlockRef()) };
 	}
 	
 	#[inline(always)]
-	fn switchBranch<V: Value, DefaultToBlockReference: ToLLVMBasicBlockRef, CaseToBlockReference: ToLLVMBasicBlockRef>(self, context: &Context, switchOnValue: V, defaultBlock: &DefaultToBlockReference, caseBlocks: &[(u8, CaseToBlockReference)]) -> TerminatorValue
+	fn switchBranch<V: Value, DefaultToBlockReference: ToLLVMBasicBlockRef, CaseToBlockReference: ToLLVMBasicBlockRef>(self, context: &Context, switchOnValue: V, defaultBlock: &DefaultToBlockReference, caseBlocks: &[(u8, CaseToBlockReference)])
 	{
 		let switchReference = unsafe { LLVMBuildSwitch(self, switchOnValue.asLLVMValueRef(), defaultBlock.toLLVMBasicBlockRef(), caseBlocks.len() as u32) };
 		
 		for &(ref constant, ref caseBlock) in caseBlocks
 		{
-			unsafe { LLVMAddCase(switchReference, context.constant(&Constant::integer8BitUnsigned(*constant)).asLLVMValueRef(), caseBlock.toLLVMBasicBlockRef()) };
+			let constantValue = context.constantInteger8BitUnsigned(*constant);
+			unsafe { LLVMAddCase(switchReference, constantValue, caseBlock.toLLVMBasicBlockRef()) };
 		}
-		
-		TerminatorValue::fromLLVMValueRef(switchReference)
 	}
 	
 	#[inline(always)]
-	fn phi(self, typeReference: LLVMTypeRefWrapper, name: Option<&CStr>) -> PhiInstructionValue
+	fn phi(self, typeReference: LLVMTypeRef) -> PhiInstructionValue
 	{
-		PhiInstructionValue::fromLLVMValueRef(unsafe { LLVMBuildPhi(self, typeReference.asLLVMTypeRef(), name.nameOrEmptyPointer()) })
+		PhiInstructionValue::fromLLVMValueRef(unsafe { LLVMBuildPhi(self, typeReference, emptyName!()) })
 	}
 	
 	#[inline(always)]
-	fn bitcastPointerToInt8Pointer(self, context: &Context, pointerValue: PointerValue, name: Option<&CStr>) -> PointerValue
+	fn bitcastPointerToInt8Pointer(self, context: &Context, pointerValue: PointerValue) -> PointerValue
 	{
-		PointerValue::fromLLVMValueRef(unsafe { LLVMBuildBitCast(self, pointerValue.asLLVMValueRef(), context.typeRef(&LlvmType::int8Pointer()).asLLVMTypeRef(), name.nameOrEmptyPointer()) })
+		PointerValue::fromLLVMValueRef(unsafe { LLVMBuildBitCast(self, pointerValue.asLLVMValueRef(), context.typeRef(&LlvmType::int8Pointer()).asLLVMTypeRef(), emptyName!()) })
 	}
 	
 	#[inline(always)]
-	fn getElementPointerAtArrayIndex<ArrayIndex: Value>(self, arrayPointer: PointerValue, arrayIndexInt64: ArrayIndex, name: Option<&CStr>) -> PointerValue
+	fn getElementPointerAtArrayIndex<ArrayIndex: Value>(self, arrayPointer: PointerValue, arrayIndexInt64: ArrayIndex) -> PointerValue
 	{
 		let mut indices =
 		[
 			arrayIndexInt64.asLLVMValueRef(),
 		];
 		
-		PointerValue::fromLLVMValueRef(unsafe { LLVMBuildInBoundsGEP(self, arrayPointer.asLLVMValueRef(), indices.as_mut_ptr(), indices.len() as u32, name.nameOrEmptyPointer()) })
+		PointerValue::fromLLVMValueRef(unsafe { LLVMBuildInBoundsGEP(self, arrayPointer.asLLVMValueRef(), indices.as_mut_ptr(), indices.len() as u32, emptyName!()) })
 	}
 	
 	#[inline(always)]
-	fn getElementPointerAtArrayIndexFieldIndex<ArrayIndex: Value, FieldIndex: Value>(self, arrayPointer: PointerValue, arrayIndexInt64: ArrayIndex, fieldIndexInt32: FieldIndex, name: Option<&CStr>) -> PointerValue
+	fn getElementPointerAtArrayIndexFieldIndex<ArrayIndex: Value, FieldIndex: Value>(self, arrayPointer: PointerValue, arrayIndexInt64: ArrayIndex, fieldIndexInt32: FieldIndex) -> PointerValue
 	{
 		let mut indices =
 		[
@@ -132,7 +131,7 @@ impl Builder for LLVMBuilderRef
 			fieldIndexInt32.asLLVMValueRef(),
 		];
 		
-		PointerValue::fromLLVMValueRef(unsafe { LLVMBuildInBoundsGEP(self, arrayPointer.asLLVMValueRef(), indices.as_mut_ptr(), indices.len() as u32, name.nameOrEmptyPointer()) })
+		PointerValue::fromLLVMValueRef(unsafe { LLVMBuildInBoundsGEP(self, arrayPointer.asLLVMValueRef(), indices.as_mut_ptr(), indices.len() as u32, emptyName!()) })
 	}
 	
 	#[inline(always)]
@@ -154,9 +153,9 @@ impl Builder for LLVMBuilderRef
 	}
 	
 	#[inline(always)]
-	fn load(self, context: &Context, from: PointerValue, typeBasedAliasAnalysisNode: Option<TypeBasedAliasAnalysisNode>, alignment: Option<PowerOfTwoThirtyTwoBit>, name: Option<&CStr>) -> LLVMValueRefWrapper
+	fn load(self, context: &Context, from: PointerValue, typeBasedAliasAnalysisNode: Option<TypeBasedAliasAnalysisNode>, alignment: Option<PowerOfTwoThirtyTwoBit>) -> LLVMValueRefWrapper
 	{
-		let instruction = unsafe { LLVMBuildLoad(self, from.asLLVMValueRef(), name.nameOrEmptyPointer()) };
+		let instruction = unsafe { LLVMBuildLoad(self, from.asLLVMValueRef(), emptyName!()) };
 		
 		if let Some(ref typeBasedAliasAnalysisNode) = typeBasedAliasAnalysisNode
 		{
@@ -172,12 +171,12 @@ impl Builder for LLVMBuilderRef
 	}
 	
 	#[inline(always)]
-	fn integerComparison(self, leftHandSide: LLVMValueRefWrapper, operation: LLVMIntPredicate, rightHandSide: LLVMValueRefWrapper, name: Option<&CStr>) -> ComparisonResultValue
+	fn integerComparison(self, leftHandSide: LLVMValueRefWrapper, operation: LLVMIntPredicate, rightHandSide: LLVMValueRefWrapper) -> ComparisonResultValue
 	{
-		ComparisonResultValue::fromLLVMValueRef(unsafe{ LLVMBuildICmp(self, operation, leftHandSide.asLLVMValueRef(), rightHandSide.asLLVMValueRef(), name.nameOrEmptyPointer()) })
+		ComparisonResultValue::fromLLVMValueRef(unsafe{ LLVMBuildICmp(self, operation, leftHandSide.asLLVMValueRef(), rightHandSide.asLLVMValueRef(), emptyName!()) })
 	}
 	
-	fn call(self, context: &Context, functionReference: FunctionValue, tailCall: TailCall, functionAttributes: &HashSet<FunctionAttribute>, callingConvention: UsefulLLVMCallConv, returns: Option<&CallParameter>, arguments: &[(LLVMValueRefWrapper, Option<&CallParameter>)], name: Option<&CStr>) -> CallValue
+	fn call(self, context: &Context, functionReference: FunctionValue, tailCall: TailCall, functionAttributes: &HashSet<FunctionAttribute>, callingConvention: UsefulLLVMCallConv, returns: Option<&CallParameter>, arguments: &[(LLVMValueRef, Option<&CallParameter>)]) -> CallValue
 	{
 		let mut llvmArguments = Vec::with_capacity(arguments.len());
 		
@@ -186,7 +185,7 @@ impl Builder for LLVMBuilderRef
 			llvmArguments.push(argument.0.asLLVMValueRef())
 		}
 		
-		let instruction = unsafe { LLVMBuildCall(self, functionReference.asLLVMValueRef(), llvmArguments.as_mut_ptr(), llvmArguments.len() as u32, name.nameOrEmptyPointer()) };
+		let instruction = unsafe { LLVMBuildCall(self, functionReference.asLLVMValueRef(), llvmArguments.as_mut_ptr(), llvmArguments.len() as u32, emptyName!()) };
 		
 		use self::TailCall::*;
 		match tailCall

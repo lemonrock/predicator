@@ -15,6 +15,17 @@ pub struct Context
 	parameterAttributeCache: ContextCache<ParameterAttribute, LLVMAttributeRef>,
 	metadataStringCache: RefCell<HashMap<String, MetadataStringValue>>,
 	metadataNodeCache: ContextCache<MetadataNode, MetadataNodeValue>,
+	
+	metadataKind_tbaa: u32,
+	metadataKind_tbaa_struct: u32,
+	
+	integer8BitTypeRef: LLVMTypeRef,
+	integer32BitTypeRef: LLVMTypeRef,
+	integer64BitTypeRef: LLVMTypeRef,
+	
+	constantBooleanTrue: LLVMValueRef,
+	constantBooleanFalse: LLVMValueRef,
+	constantZeroInteger64BitUnsigned: LLVMValueRef
 }
 
 #[derive(Clone)]
@@ -69,7 +80,7 @@ impl Context
 		}
 		else
 		{
-			let this = Self
+			let mut this = Self
 			{
 				reference: reference,
 				dropWrapper: Rc::new(ContextDropWrapper(reference)),
@@ -81,10 +92,50 @@ impl Context
 				parameterAttributeCache: ContextCache::default(),
 				metadataStringCache: RefCell::new(HashMap::new()),
 				metadataNodeCache: ContextCache::default(),
+				
+				metadataKind_tbaa: 0,
+				metadataKind_tbaa_struct: 0,
+				
+				integer8BitTypeRef: null_mut(),
+				integer32BitTypeRef: null_mut(),
+				integer64BitTypeRef: null_mut(),
+				
+				constantBooleanTrue: null_mut(),
+				constantBooleanFalse: null_mut(),
+				constantZeroInteger64BitUnsigned: null_mut(),
 			};
+			
+			this.metadataKind_tbaa = this.metadataKind(b"tbaa");
+			this.metadataKind_tbaa_struct = this.metadataKind(b"tbaa.struct");
+			
+			this.integer8BitTypeRef = this.typeRef(&LlvmType::Int8).asLLVMTypeRef();
+			this.integer32BitTypeRef = this.typeRef(&LlvmType::Int32).asLLVMTypeRef();
+			this.integer64BitTypeRef = this.typeRef(&LlvmType::Int64).asLLVMTypeRef();
+			
+			this.constantBooleanTrue = this.constant(&Constant::True).asLLVMValueRef();
+			this.constantBooleanFalse = this.constant(&Constant::False).asLLVMValueRef();
+			this.constantZeroInteger64BitUnsigned = this.constantInteger64BitUnsigned(0).asLLVMValueRef();
 			
 			Ok(this)
 		}
+	}
+	
+	#[inline(always)]
+	pub fn metadataKind_tbaa(&self) -> u32
+	{
+		self.metadataKind_tbaa
+	}
+	
+	#[inline(always)]
+	pub fn metadataKind_tbaa_struct(&self) -> u32
+	{
+		self.metadataKind_tbaa_struct
+	}
+	
+	#[inline(always)]
+	fn metadataKind(&self, name: &[u8]) -> u32
+	{
+		unsafe { LLVMGetMDKindIDInContext(self.reference, name.as_ptr() as *const _, name.len() as u32) }
 	}
 	
 	#[inline(always)]
@@ -112,9 +163,63 @@ impl Context
 	}
 	
 	#[inline(always)]
+	pub fn integer8BitTypeRef(&self) -> LLVMTypeRef
+	{
+		self.integer8BitTypeRef
+	}
+	
+	#[inline(always)]
+	pub fn integer32BitTypeRef(&self) -> LLVMTypeRef
+	{
+		self.integer32BitTypeRef
+	}
+	
+	#[inline(always)]
+	pub fn integer64BitTypeRef(&self) -> LLVMTypeRef
+	{
+		self.integer64BitTypeRef
+	}
+	
+	#[inline(always)]
 	pub fn typeRef(&self, llvmType: &LlvmType) -> LLVMTypeRefWrapper
 	{
 		self.typeRefCache.getOrAdd(llvmType, self)
+	}
+	
+	#[inline(always)]
+	pub fn constantBooleanTrue(&self) -> LLVMValueRef
+	{
+		self.constantBooleanTrue
+	}
+	
+	#[inline(always)]
+	pub fn constantBooleanFalse(&self) -> LLVMValueRef
+	{
+		self.constantBooleanFalse
+	}
+	
+	#[inline(always)]
+	pub fn constantInteger8BitUnsigned(&self, value: u8) -> LLVMValueRef
+	{
+		unsafe { LLVMConstInt(self.integer8BitTypeRef, value as u64, 0) }
+	}
+	
+	#[inline(always)]
+	pub fn constantInteger32BitUnsigned(&self, value: u32) -> LLVMValueRef
+	{
+		unsafe { LLVMConstInt(self.integer32BitTypeRef, value as u64, 0) }
+	}
+	
+	#[inline(always)]
+	pub fn constantInteger64BitUnsigned(&self, value: u64) -> LLVMValueRef
+	{
+		unsafe { LLVMConstInt(self.integer64BitTypeRef, value, 0) }
+	}
+	
+	#[inline(always)]
+	pub fn constantZeroInteger64BitUnsigned(&self) -> LLVMValueRef
+	{
+		self.constantZeroInteger64BitUnsigned
 	}
 	
 	#[inline(always)]
@@ -183,24 +288,6 @@ impl Context
 	pub fn parameterAttributeRef(&self, attribute: &ParameterAttribute) -> LLVMAttributeRef
 	{
 		self.parameterAttributeCache.getOrAdd(attribute, self)
-	}
-	
-	#[inline(always)]
-	pub fn metadataKind_tbaa(&self) -> u32
-	{
-		self.metadataKind(b"tbaa")
-	}
-	
-	#[inline(always)]
-	pub fn metadataKind_tbaa_struct(&self) -> u32
-	{
-		self.metadataKind(b"tbaa.struct")
-	}
-	
-	#[inline(always)]
-	pub fn metadataKind(&self, name: &[u8]) -> u32
-	{
-		unsafe { LLVMGetMDKindIDInContext(self.reference, name.as_ptr() as *const _, name.len() as u32) }
 	}
 	
 	pub fn createModule(&self, name: &str, identifier: &str, targetTriple: &CStr, targetMachineDataLayout: &TargetMachineDataLayout, inlineAssembler: Option<&str>) -> Result<Module, String>
@@ -284,7 +371,6 @@ impl Context
 		}
 	}
 	
-	#[inline(always)]
 	pub fn parseTextualIntermediateRepresentationIntoModule<'a>(&self, memoryBuffer: &MemoryBuffer<'a>) -> Result<Module, String>
 	{
 		let mut reference = unsafe { uninitialized() };

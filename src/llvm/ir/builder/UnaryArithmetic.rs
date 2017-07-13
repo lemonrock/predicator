@@ -15,22 +15,21 @@ pub enum UnaryArithmetic
 impl UnaryArithmetic
 {
 	#[inline(always)]
-	pub(crate) fn operate<V: Value>(&self, builderReference: LLVMBuilderRef, value: V, name: Option<&CStr>) -> LLVMValueRefWrapper
+	pub(crate) fn operate<V: Value>(&self, builderReference: LLVMBuilderRef, value: V) -> LLVMValueRefWrapper
 	{
 		use self::UnaryArithmetic::*;
 		
 		let value = value.asLLVMValueRef();
-		let name = name.nameOrEmptyPointer();
 		
 		let value = unsafe
 		{
 			match *self
 			{
-				Neg => LLVMBuildNeg(builderReference, value, name),
-				NSWNeg => LLVMBuildNSWNeg(builderReference, value, name),
-				NUWNeg => LLVMBuildNUWNeg(builderReference, value, name),
-				FNeg => LLVMBuildFNeg(builderReference, value, name),
-				Not => LLVMBuildNot(builderReference, value, name),
+				Neg => LLVMBuildNeg(builderReference, value, emptyName!()),
+				NSWNeg => LLVMBuildNSWNeg(builderReference, value, emptyName!()),
+				NUWNeg => LLVMBuildNUWNeg(builderReference, value, emptyName!()),
+				FNeg => LLVMBuildFNeg(builderReference, value, emptyName!()),
+				Not => LLVMBuildNot(builderReference, value, emptyName!()),
 			}
 		};
 		LLVMValueRefWrapper::fromLLVMValueRef(value)

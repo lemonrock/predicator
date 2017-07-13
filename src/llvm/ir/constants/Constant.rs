@@ -403,7 +403,7 @@ impl Constant
 	}
 	
 	#[inline(always)]
-	pub fn integer8BitUnsigned(value: u8) -> Self
+	pub const fn integer8BitUnsigned(value: u8) -> Self
 	{
 		Constant::Integer
 		{
@@ -427,7 +427,7 @@ impl Constant
 	}
 	
 	#[inline(always)]
-	pub fn integer16BitUnsigned(value: u16) -> Self
+	pub const fn integer16BitUnsigned(value: u16) -> Self
 	{
 		Constant::Integer
 		{
@@ -451,7 +451,7 @@ impl Constant
 	}
 	
 	#[inline(always)]
-	pub fn integer32BitUnsigned(value: u32) -> Self
+	pub const fn integer32BitUnsigned(value: u32) -> Self
 	{
 		Constant::Integer
 		{
@@ -475,7 +475,7 @@ impl Constant
 	}
 	
 	#[inline(always)]
-	pub fn integer64BitUnsigned(value: u64) -> Self
+	pub const fn integer64BitUnsigned(value: u64) -> Self
 	{
 		Constant::Integer
 		{
@@ -498,7 +498,7 @@ impl Constant
 		}
 	}
 	#[inline(always)]
-	pub fn float16BitUnsigned(value: u16) -> Self
+	pub const fn float16BitUnsigned(value: u16) -> Self
 	{
 		Constant::Float
 		{
@@ -508,7 +508,7 @@ impl Constant
 	}
 	
 	#[inline(always)]
-	pub fn float32BitUnsigned(value: u32) -> Self
+	pub const fn float32BitUnsigned(value: u32) -> Self
 	{
 		Constant::Float
 		{
@@ -518,7 +518,7 @@ impl Constant
 	}
 	
 	#[inline(always)]
-	pub fn float64BitUnsigned(value: u64) -> Self
+	pub const fn float64BitUnsigned(value: u64) -> Self
 	{
 		Constant::Float
 		{
@@ -548,7 +548,7 @@ impl Constant
 	}
 	
 	#[inline(always)]
-	pub fn nullPointer(underlying: LlvmType) -> Self
+	pub const fn nullPointer(underlying: LlvmType) -> Self
 	{
 		Constant::NullPointer
 		{
@@ -557,7 +557,7 @@ impl Constant
 	}
 	
 	#[inline(always)]
-	pub fn zeroed(underlying: LlvmType) -> Self
+	pub const fn zeroed(underlying: LlvmType) -> Self
 	{
 		Constant::Zeroed
 		{
@@ -566,7 +566,7 @@ impl Constant
 	}
 	
 	#[inline(always)]
-	pub fn undefined(underlying: LlvmType) -> Self
+	pub const fn undefined(underlying: LlvmType) -> Self
 	{
 		Constant::Undefined
 		{
@@ -608,7 +608,7 @@ impl Constant
 	}
 	
 	#[inline(always)]
-	pub fn sizeOf(llvmType: LlvmType) -> Self
+	pub const fn sizeOf(llvmType: LlvmType) -> Self
 	{
 		Constant::NullaryTypeOperation
 		{

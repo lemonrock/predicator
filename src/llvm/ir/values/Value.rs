@@ -87,3 +87,18 @@ pub trait Value: Sized + Copy + Clone
 		}
 	}
 }
+
+impl Value for LLVMValueRef
+{
+	#[inline(always)]
+	fn fromLLVMValueRef(value: LLVMValueRef) -> Self
+	{
+		value
+	}
+	
+	#[inline(always)]
+	fn asLLVMValueRef(&self) -> LLVMValueRef
+	{
+		*self
+	}
+}

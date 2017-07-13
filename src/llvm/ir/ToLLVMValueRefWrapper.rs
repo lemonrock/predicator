@@ -22,7 +22,7 @@ impl ToLLVMValueRefWrapper for u8
 	#[inline(always)]
 	fn toLLVMValueRefWrapper(&self, context: &Context) -> LLVMValueRefWrapper
 	{
-		Constant::integer8BitUnsigned(*self).toLLVMValueRefWrapper(context)
+		LLVMValueRefWrapper::fromLLVMValueRef(context.constantInteger8BitUnsigned(*self))
 	}
 }
 
@@ -31,6 +31,6 @@ impl ToLLVMValueRefWrapper for u64
 	#[inline(always)]
 	fn toLLVMValueRefWrapper(&self, context: &Context) -> LLVMValueRefWrapper
 	{
-		Constant::integer64BitUnsigned(*self).toLLVMValueRefWrapper(context)
+		LLVMValueRefWrapper::fromLLVMValueRef(context.constantInteger64BitUnsigned(*self))
 	}
 }
