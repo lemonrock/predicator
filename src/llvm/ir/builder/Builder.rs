@@ -38,10 +38,10 @@ pub(crate) trait Builder
 	fn getElementPointerAtArrayIndexFieldIndex<ArrayIndex: Value, FieldIndex: Value>(self, arrayPointer: PointerValue, arrayIndexInt64: ArrayIndex, fieldIndexInt32: FieldIndex) -> PointerValue;
 	
 	#[inline(always)]
-	fn store(self, context: &Context, into: PointerValue, value: LLVMValueRefWrapper, typeBasedAliasAnalysisNode: Option<TypeBasedAliasAnalysisNode>, alignment: Option<PowerOfTwoThirtyTwoBit>) -> LLVMValueRefWrapper;
+	fn store(self, metadataKind_tbaa: u32, into: PointerValue, value: LLVMValueRefWrapper, typeBasedAliasAnalysisNode: LLVMValueRef, alignment: Option<PowerOfTwoThirtyTwoBit>) -> LLVMValueRefWrapper;
 	
 	#[inline(always)]
-	fn load(self, context: &Context, from: PointerValue, typeBasedAliasAnalysisNode: Option<TypeBasedAliasAnalysisNode>, alignment: Option<PowerOfTwoThirtyTwoBit>) -> LLVMValueRefWrapper;
+	fn load(self, metadataKind_tbaa: u32, from: PointerValue, typeBasedAliasAnalysisNode: LLVMValueRef, alignment: Option<PowerOfTwoThirtyTwoBit>) -> LLVMValueRefWrapper;
 	
 	#[inline(always)]
 	fn integerComparison(self, leftHandSide: LLVMValueRefWrapper, operation: LLVMIntPredicate, rightHandSide: LLVMValueRefWrapper) -> ComparisonResultValue;
@@ -135,13 +135,13 @@ impl Builder for LLVMBuilderRef
 	}
 	
 	#[inline(always)]
-	fn store(self, context: &Context, into: PointerValue, value: LLVMValueRefWrapper, typeBasedAliasAnalysisNode: Option<TypeBasedAliasAnalysisNode>, alignment: Option<PowerOfTwoThirtyTwoBit>) -> LLVMValueRefWrapper
+	fn store(self, metadataKind_tbaa: u32, into: PointerValue, value: LLVMValueRefWrapper, typeBasedAliasAnalysisNode: LLVMValueRef, alignment: Option<PowerOfTwoThirtyTwoBit>) -> LLVMValueRefWrapper
 	{
 		let instruction = unsafe { LLVMBuildStore(self, value.asLLVMValueRef(), into.asLLVMValueRef()) };
 		
-		if let Some(ref typeBasedAliasAnalysisNode) = typeBasedAliasAnalysisNode
+		if !typeBasedAliasAnalysisNode.is_null()
 		{
-			unsafe { LLVMSetMetadata(instruction, context.metadataKind_tbaa(), context.typeBasedAliasAnalysisNode(typeBasedAliasAnalysisNode).asLLVMValueRef()) };
+			unsafe { LLVMSetMetadata(instruction, metadataKind_tbaa, typeBasedAliasAnalysisNode) };
 		}
 		
 		if let Some(alignment) = alignment
@@ -153,13 +153,13 @@ impl Builder for LLVMBuilderRef
 	}
 	
 	#[inline(always)]
-	fn load(self, context: &Context, from: PointerValue, typeBasedAliasAnalysisNode: Option<TypeBasedAliasAnalysisNode>, alignment: Option<PowerOfTwoThirtyTwoBit>) -> LLVMValueRefWrapper
+	fn load(self, metadataKind_tbaa: u32, from: PointerValue, typeBasedAliasAnalysisNode: LLVMValueRef, alignment: Option<PowerOfTwoThirtyTwoBit>) -> LLVMValueRefWrapper
 	{
 		let instruction = unsafe { LLVMBuildLoad(self, from.asLLVMValueRef(), emptyName!()) };
 		
-		if let Some(ref typeBasedAliasAnalysisNode) = typeBasedAliasAnalysisNode
+		if !typeBasedAliasAnalysisNode.is_null()
 		{
-			unsafe { LLVMSetMetadata(instruction, context.metadataKind_tbaa(), context.typeBasedAliasAnalysisNode(typeBasedAliasAnalysisNode).asLLVMValueRef()) };
+			unsafe { LLVMSetMetadata(instruction, metadataKind_tbaa, typeBasedAliasAnalysisNode) };
 		}
 		
 		if let Some(alignment) = alignment

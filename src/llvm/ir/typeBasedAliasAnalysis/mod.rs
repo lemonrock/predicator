@@ -5,5 +5,6 @@
 use super::*;
 
 
+include!("PathTypeBasedAliasAnalysisNode.rs");
+include!("PointerPathTypeBasedAliasAnalysisNode.rs");
 include!("TypeBasedAliasAnalysisNode.rs");
-include!("TypeBasedAliasAnalysisNodeStructField.rs");

@@ -8,6 +8,7 @@ pub enum MetadataKind
 	String(String),
 	Constant(Constant),
 	Node(MetadataNode),
+	KnownValue(LLVMValueRef),
 }
 
 impl ToReference<LLVMValueRefWrapper> for MetadataKind
@@ -33,18 +34,11 @@ impl ToReference<LLVMValueRefWrapper> for MetadataKind
 			{
 				context.metadataNode(metadataNode).asLLVMValueRefWrapper()
 			}
+			
+			KnownValue(value) =>
+			{
+				LLVMValueRefWrapper::fromLLVMValueRef(value)
+			}
 		}
-	}
-}
-
-impl MetadataKind
-{
-	#[inline(always)]
-	pub fn toMetadataNode(self) -> MetadataNode
-	{
-		MetadataNode(vec!
-		[
-			self
-		])
 	}
 }

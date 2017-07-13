@@ -158,15 +158,15 @@ impl<'a> Block<'a>
 	}
 	
 	#[inline(always)]
-	pub fn storeValue(&self, into: PointerValue, value: LLVMValueRefWrapper, offsetIntoBaseType: u64, from: &TypeBasedAliasAnalysisNode, to: &TypeBasedAliasAnalysisNode, alignment: PowerOfTwoThirtyTwoBit) -> LLVMValueRefWrapper
+	pub fn storeValue(&self, into: PointerValue, value: LLVMValueRefWrapper, path: &PathTypeBasedAliasAnalysisNode, alignment: PowerOfTwoThirtyTwoBit) -> LLVMValueRefWrapper
 	{
-		self.builderReference.store(self.context, into, value, Self::path(offsetIntoBaseType, from, to), Some(alignment))
+		self.builderReference.store(self.metadataKind_tbaa(), into, value, path.asLLVMValueRef(), Some(alignment))
 	}
 	
 	#[inline(always)]
-	pub fn loadValue(&self, arrayPointer: PointerValue, offsetIntoBaseType: u64, from: &TypeBasedAliasAnalysisNode, to: &TypeBasedAliasAnalysisNode, alignment: PowerOfTwoThirtyTwoBit) -> LLVMValueRefWrapper
+	pub fn loadValue(&self, arrayPointer: PointerValue, path: &PathTypeBasedAliasAnalysisNode, alignment: PowerOfTwoThirtyTwoBit) -> LLVMValueRefWrapper
 	{
-		self.builderReference.load(self.context, arrayPointer, Self::path(offsetIntoBaseType, from, to), Some(alignment))
+		self.builderReference.load(self.metadataKind_tbaa(), arrayPointer, path.asLLVMValueRef(), Some(alignment))
 	}
 	
 	#[inline(always)]
@@ -206,7 +206,6 @@ impl<'a> Block<'a>
 		self.builderReference.call(self.context, functionReference, TailCall::Tail, &HashSet::default(), UsefulLLVMCallConv::LLVMCCallConv, None, &arguments);
 		
 		//  For each group of three, the first operand gives the byte offset of a field in bytes, the second gives its size in bytes, and the third gives its tbaa tag
-		// TBAA tag is the from/to/offset/is-constant, ie !tbaa, ie TypeBasedAliasAnalysisNode::path(offsetIntoBaseType, from, to)
 		// !{
 		// i64 0, i64 4, !1,
 		// i64 8, i64 4, !2
@@ -217,31 +216,31 @@ impl<'a> Block<'a>
 	}
 	
 	#[inline(always)]
-	pub fn loadPointer(&self, arrayPointer: PointerValue, offsetIntoBaseType: u64, from: &TypeBasedAliasAnalysisNode) -> PointerValue
+	pub fn loadPointer(&self, arrayPointer: PointerValue, pointerPath: &PointerPathTypeBasedAliasAnalysisNode) -> PointerValue
 	{
-		PointerValue::fromLLVMValueRefWrapper(self.loadValue(arrayPointer, offsetIntoBaseType, from, &TypeBasedAliasAnalysisNode::any_pointer(), Self::PointerAlignment))
+		PointerValue::fromLLVMValueRefWrapper(self.loadValue(arrayPointer, pointerPath.asPathTypeBasedAliasAnalysisNode(), Self::PointerAlignment))
 	}
 	
 	#[inline(always)]
-	pub fn loadValueFromReferencedStructField(&self, pointerValue: PointerValue, fieldIndex: u32, offsetIntoBaseType: u64, from: &TypeBasedAliasAnalysisNode, to: &TypeBasedAliasAnalysisNode, valueAlignment: PowerOfTwoThirtyTwoBit) -> (LLVMValueRefWrapper, PointerValue)
+	pub fn loadValueFromReferencedStructField(&self, pointerValue: PointerValue, fieldIndex: u32, path: &PathTypeBasedAliasAnalysisNode, valueAlignment: PowerOfTwoThirtyTwoBit) -> (LLVMValueRefWrapper, PointerValue)
 	{
 		let arrayPointer = self.pointerToStructField(pointerValue, fieldIndex);
-		let loadedValue = self.loadValue(arrayPointer, offsetIntoBaseType, from, to, valueAlignment);
+		let loadedValue = self.loadValue(arrayPointer, path, valueAlignment);
 		(loadedValue, arrayPointer)
 	}
 	
 	#[inline(always)]
-	pub fn loadPointerFromReferencedStructField(&self, pointerValue: PointerValue, fieldIndex: u32, offsetIntoBaseType: u64, from: &TypeBasedAliasAnalysisNode) -> (PointerValue, PointerValue)
+	pub fn loadPointerFromReferencedStructField(&self, pointerValue: PointerValue, fieldIndex: u32, pointerPath: &PointerPathTypeBasedAliasAnalysisNode) -> (PointerValue, PointerValue)
 	{
 		let arrayPointer = self.pointerToStructField(pointerValue, fieldIndex);
-		let loadedPointer = self.loadPointer(arrayPointer, offsetIntoBaseType, from);
+		let loadedPointer = self.loadPointer(arrayPointer, pointerPath);
 		(loadedPointer, arrayPointer)
 	}
 	
 	#[inline(always)]
-	fn path(offsetIntoBaseType: u64, from: &TypeBasedAliasAnalysisNode, to: &TypeBasedAliasAnalysisNode) -> Option<TypeBasedAliasAnalysisNode>
+	fn metadataKind_tbaa(&self) -> u32
 	{
-		Some(TypeBasedAliasAnalysisNode::path(offsetIntoBaseType, from, to))
+		self.context.metadataKind_tbaa()
 	}
 	
 	#[inline(always)]

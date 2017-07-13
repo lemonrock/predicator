@@ -14,25 +14,24 @@ impl TypeBasedAliasAnalysisNode
 	}
 	
 	#[inline(always)]
-	pub fn asStructField(&self, offset: u64) -> TypeBasedAliasAnalysisNodeStructField
+	pub fn toMetadataNodeReference(&self) -> &MetadataNode
 	{
-		TypeBasedAliasAnalysisNodeStructField
-		{
-			kind: self.clone(),
-			offset: offset,
-		}
+		&self.0
 	}
 	
 	#[inline(always)]
-	fn Root() -> Self
+	fn Root() -> &'static Self
 	{
-		TypeBasedAliasAnalysisNode
-		(
-			MetadataNode(vec!
-			[
-				MetadataKind::String("Simple C/C++ TBAA".to_owned()),
-			])
-		)
+		true_immutable_thread_local!(TypeBasedAliasAnalysisNode,
+		{
+			TypeBasedAliasAnalysisNode
+			(
+				MetadataNode(vec!
+				[
+					MetadataKind::String("Simple C/C++ TBAA".to_owned()),
+				])
+			)
+		})
 	}
 	
 	#[inline(always)]
@@ -59,43 +58,61 @@ impl TypeBasedAliasAnalysisNode
 	}
 	
 	#[inline(always)]
-	pub fn omnipotent_char() -> Self
+	pub fn omnipotent_char() -> &'static Self
 	{
-		Self::Scalar("omnipotent char", &TypeBasedAliasAnalysisNode::Root(), false)
+		true_immutable_thread_local!(TypeBasedAliasAnalysisNode,
+		{
+			Self::Scalar("omnipotent char", TypeBasedAliasAnalysisNode::Root(), false)
+		})
 	}
 	
 	#[inline(always)]
-	pub fn short() -> Self
+	pub fn short() -> &'static Self
 	{
-		Self::Scalar("short", &Self::omnipotent_char(), false)
+		true_immutable_thread_local!(TypeBasedAliasAnalysisNode,
+		{
+			Self::Scalar("short", &Self::omnipotent_char(), false)
+		})
 	}
 	
 	#[inline(always)]
-	pub fn int() -> Self
+	pub fn int() -> &'static Self
 	{
-		Self::Scalar("int", &Self::omnipotent_char(), false)
+		true_immutable_thread_local!(TypeBasedAliasAnalysisNode,
+		{
+			Self::Scalar("int", &Self::omnipotent_char(), false)
+		})
 	}
 	
 	#[inline(always)]
-	pub fn long() -> Self
+	pub fn long() -> &'static Self
 	{
-		Self::Scalar("long", &Self::omnipotent_char(), false)
+		true_immutable_thread_local!(TypeBasedAliasAnalysisNode,
+		{
+			Self::Scalar("long", &Self::omnipotent_char(), false)
+		})
 	}
 	
 	#[inline(always)]
-	pub fn long_long() -> Self
+	pub fn long_long() -> &'static Self
 	{
-		Self::Scalar("long long", &Self::omnipotent_char(), false)
+		true_immutable_thread_local!(TypeBasedAliasAnalysisNode,
+		{
+			Self::Scalar("long long", &Self::omnipotent_char(), false)
+		})
 	}
 	
 	#[inline(always)]
-	pub fn any_pointer() -> Self
+	pub fn any_pointer() -> &'static Self
 	{
-		Self::Scalar("any pointer", &Self::omnipotent_char(), false)
+		true_immutable_thread_local!(TypeBasedAliasAnalysisNode,
+		{
+			Self::Scalar("any pointer", &Self::omnipotent_char(), false)
+		})
 	}
 	
 	#[inline(always)]
-	pub fn path(offsetIntoBaseType: u64, baseType: &TypeBasedAliasAnalysisNode, accessType: &TypeBasedAliasAnalysisNode) -> Self
+	pub fn path(context: &Context, offsetIntoBaseType: u64, baseType: &TypeBasedAliasAnalysisNode, accessType: &TypeBasedAliasAnalysisNode) -> Self
 	{
 		const isConstant: bool = false;
 		
@@ -112,13 +129,13 @@ impl TypeBasedAliasAnalysisNode
 		[
 			MetadataKind::Node(baseType.toMetadataNode()),
 			MetadataKind::Node(accessType.toMetadataNode()),
-			MetadataKind::Constant(Constant::integer64BitUnsigned(offsetIntoBaseType)),
-			MetadataKind::Constant(Constant::integer64BitUnsigned(constantValue)),
+			MetadataKind::KnownValue(context.constantInteger64BitUnsigned(offsetIntoBaseType)),
+			MetadataKind::KnownValue(context.constantInteger64BitUnsigned(constantValue)),
 		]))
 	}
 	
 	#[inline(always)]
-	pub fn namedStruct<S: Into<String>>(name: S, fields: &[(TypeBasedAliasAnalysisNode, u64)]) -> Self
+	pub fn namedStruct<S: Into<String>>(name: S, fields: &[(&TypeBasedAliasAnalysisNode, u64)]) -> Self
 	{
 		let mut values = Vec::with_capacity(1 + 2 * fields.len());
 		values.push(MetadataKind::String(name.into()));

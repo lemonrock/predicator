@@ -225,7 +225,8 @@ impl Context
 	#[inline(always)]
 	pub fn constant(&self, constant: &Constant) -> ConstantValue
 	{
-		self.constantCache.getOrAdd(constant, self)
+		constant.toReference(self)
+		//self.constantCache.getOrAdd(constant, self)
 	}
 	
 	pub fn metadataString(&self, string: &str) -> MetadataStringValue
@@ -255,7 +256,7 @@ impl Context
 	#[inline(always)]
 	pub fn typeBasedAliasAnalysisNode(&self, typeBasedAliasAnalysisNode: &TypeBasedAliasAnalysisNode) -> TypeBasedAliasAnalysisNodeValue
 	{
-		self.metadataNode(&typeBasedAliasAnalysisNode.toMetadataNode()).toTypeBasedAliasAnalysisNodeValue()
+		self.metadataNode(typeBasedAliasAnalysisNode.toMetadataNodeReference()).toTypeBasedAliasAnalysisNodeValue()
 	}
 	
 	#[inline(always)]
