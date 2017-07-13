@@ -53,9 +53,9 @@ impl FunctionValue
 	}
 	
 	#[inline(always)]
-	pub fn createBlock<'a, S: Into<String> + Clone>(self, context: &'a Context, name: S) -> Block<'a>
+	pub fn createBlock<'a>(self, context: &'a Context) -> Block<'a>
 	{
-		Block::create(name, context, self)
+		Block::create(context, self)
 	}
 	
 	#[inline(always)]

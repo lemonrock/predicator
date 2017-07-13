@@ -8,8 +8,6 @@ pub struct Block<'a>
 	functionValue: FunctionValue,
 	basicBlockReference: LLVMBasicBlockRef,
 	builderReference: LLVMBuilderRef,
-	name: String,
-	nextValue: Cell<u64>,
 }
 
 impl<'a> Drop for Block<'a>
@@ -35,11 +33,9 @@ impl<'a> Block<'a>
 	pub const PointerAlignment: PowerOfTwoThirtyTwoBit = PowerOfTwoThirtyTwoBit::_8;
 	
 	#[inline(always)]
-	pub(crate) fn create<S: Into<String> + Clone>(name: S, context: &'a Context, functionValue: FunctionValue) -> Block<'a>
+	pub(crate) fn create(context: &'a Context, functionValue: FunctionValue) -> Block<'a>
 	{
-		let name = name.into();
-		let cName = CString::new(name.as_bytes()).unwrap();
-		let basicBlockReference = unsafe { LLVMAppendBasicBlockInContext(context.reference, functionValue.asLLVMValueRef(), cName.as_ptr()) };
+		let basicBlockReference = unsafe { LLVMAppendBasicBlockInContext(context.reference, functionValue.asLLVMValueRef(), b"\0".as_ptr() as *const _) };
 		
 		let builderReference = context.builder();
 		
@@ -51,24 +47,13 @@ impl<'a> Block<'a>
 			functionValue,
 			basicBlockReference,
 			builderReference,
-			name,
-			nextValue: Cell::new(0),
 		}
 	}
 	
 	#[inline(always)]
 	pub fn child(&self) -> Block<'a>
 	{
-		Self::create(self.nextValueName(), self.context, self.functionValue)
-	}
-	
-	#[inline(always)]
-	fn nextValueName(&self) -> String
-	{
-		let nextChild = self.nextValue.get();
-		let name = format!("{}.{}", &self.name, nextChild);
-		self.nextValue.set(nextChild + 1);
-		name
+		Self::create(self.context, self.functionValue)
 	}
 	
 	#[inline(always)]

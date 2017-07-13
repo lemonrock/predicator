@@ -10,7 +10,6 @@ use ::rust_extra::powersOfTwo::PowerOfTwoThirtyTwoBit;
 use ::std::cmp::Eq;
 use ::std::hash::Hash;
 use ::std::mem::transmute;
-use ::std::cell::Cell;
 use ::std::collections::HashMap;
 use ::std::collections::HashSet;
 
