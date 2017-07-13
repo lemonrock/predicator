@@ -25,18 +25,24 @@ impl PhiInstructionValue
 	#[inline(always)]
 	pub fn addPredecessor<'a, V: Value>(self, value: V, block: &Block<'a>) -> Self
 	{
+		Self::addPredecessorRaw(self.asLLVMValueRef(), value.asLLVMValueRef(), block.toLLVMBasicBlockRef());
+		
+		self
+	}
+	
+	#[inline(always)]
+	pub fn addPredecessorRaw(this: LLVMValueRef, value: LLVMValueRef, block: LLVMBasicBlockRef)
+	{
 		let mut IncomingValues =
 		[
-			value.asLLVMValueRef(),
+			value,
 		];
 		
 		let mut IncomingBlocks =
 		[
-			block.toLLVMBasicBlockRef(),
+			block,
 		];
 		
-		unsafe { LLVMAddIncoming(self.asLLVMValueRef(), IncomingValues.as_mut_ptr(), IncomingBlocks.as_mut_ptr(), 1); };
-		
-		self
+		unsafe { LLVMAddIncoming(this, IncomingValues.as_mut_ptr(), IncomingBlocks.as_mut_ptr(), 1); };
 	}
 }
