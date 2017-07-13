@@ -40,12 +40,6 @@ impl ToReference<LLVMValueRefWrapper> for MetadataKind
 impl MetadataKind
 {
 	#[inline(always)]
-	pub fn string<S: Into<String>>(value: S) -> MetadataKind
-	{
-		MetadataKind::String(value.into())
-	}
-	
-	#[inline(always)]
 	pub fn toMetadataNode(self) -> MetadataNode
 	{
 		MetadataNode(vec!

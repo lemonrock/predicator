@@ -158,13 +158,13 @@ impl<'a> Block<'a>
 	}
 	
 	#[inline(always)]
-	pub fn storeValue(&self, into: PointerValue, value: LLVMValueRefWrapper, offsetIntoBaseType: u64, from: TypeBasedAliasAnalysisNode, to: TypeBasedAliasAnalysisNode, alignment: PowerOfTwoThirtyTwoBit) -> LLVMValueRefWrapper
+	pub fn storeValue(&self, into: PointerValue, value: LLVMValueRefWrapper, offsetIntoBaseType: u64, from: &TypeBasedAliasAnalysisNode, to: &TypeBasedAliasAnalysisNode, alignment: PowerOfTwoThirtyTwoBit) -> LLVMValueRefWrapper
 	{
 		self.builderReference.store(self.context, into, value, Self::path(offsetIntoBaseType, from, to), Some(alignment))
 	}
 	
 	#[inline(always)]
-	pub fn loadValue(&self, arrayPointer: PointerValue, offsetIntoBaseType: u64, from: TypeBasedAliasAnalysisNode, to: TypeBasedAliasAnalysisNode, alignment: PowerOfTwoThirtyTwoBit) -> LLVMValueRefWrapper
+	pub fn loadValue(&self, arrayPointer: PointerValue, offsetIntoBaseType: u64, from: &TypeBasedAliasAnalysisNode, to: &TypeBasedAliasAnalysisNode, alignment: PowerOfTwoThirtyTwoBit) -> LLVMValueRefWrapper
 	{
 		self.builderReference.load(self.context, arrayPointer, Self::path(offsetIntoBaseType, from, to), Some(alignment))
 	}
@@ -217,13 +217,13 @@ impl<'a> Block<'a>
 	}
 	
 	#[inline(always)]
-	pub fn loadPointer(&self, arrayPointer: PointerValue, offsetIntoBaseType: u64, from: TypeBasedAliasAnalysisNode) -> PointerValue
+	pub fn loadPointer(&self, arrayPointer: PointerValue, offsetIntoBaseType: u64, from: &TypeBasedAliasAnalysisNode) -> PointerValue
 	{
-		PointerValue::fromLLVMValueRefWrapper(self.loadValue(arrayPointer, offsetIntoBaseType, from, TypeBasedAliasAnalysisNode::any_pointer(), Self::PointerAlignment))
+		PointerValue::fromLLVMValueRefWrapper(self.loadValue(arrayPointer, offsetIntoBaseType, from, &TypeBasedAliasAnalysisNode::any_pointer(), Self::PointerAlignment))
 	}
 	
 	#[inline(always)]
-	pub fn loadValueFromReferencedStructField(&self, pointerValue: PointerValue, fieldIndex: u32, offsetIntoBaseType: u64, from: TypeBasedAliasAnalysisNode, to: TypeBasedAliasAnalysisNode, valueAlignment: PowerOfTwoThirtyTwoBit) -> (LLVMValueRefWrapper, PointerValue)
+	pub fn loadValueFromReferencedStructField(&self, pointerValue: PointerValue, fieldIndex: u32, offsetIntoBaseType: u64, from: &TypeBasedAliasAnalysisNode, to: &TypeBasedAliasAnalysisNode, valueAlignment: PowerOfTwoThirtyTwoBit) -> (LLVMValueRefWrapper, PointerValue)
 	{
 		let arrayPointer = self.pointerToStructField(pointerValue, fieldIndex);
 		let loadedValue = self.loadValue(arrayPointer, offsetIntoBaseType, from, to, valueAlignment);
@@ -231,7 +231,7 @@ impl<'a> Block<'a>
 	}
 	
 	#[inline(always)]
-	pub fn loadPointerFromReferencedStructField(&self, pointerValue: PointerValue, fieldIndex: u32, offsetIntoBaseType: u64, from: TypeBasedAliasAnalysisNode) -> (PointerValue, PointerValue)
+	pub fn loadPointerFromReferencedStructField(&self, pointerValue: PointerValue, fieldIndex: u32, offsetIntoBaseType: u64, from: &TypeBasedAliasAnalysisNode) -> (PointerValue, PointerValue)
 	{
 		let arrayPointer = self.pointerToStructField(pointerValue, fieldIndex);
 		let loadedPointer = self.loadPointer(arrayPointer, offsetIntoBaseType, from);
@@ -239,7 +239,7 @@ impl<'a> Block<'a>
 	}
 	
 	#[inline(always)]
-	fn path(offsetIntoBaseType: u64, from: TypeBasedAliasAnalysisNode, to: TypeBasedAliasAnalysisNode) -> Option<TypeBasedAliasAnalysisNode>
+	fn path(offsetIntoBaseType: u64, from: &TypeBasedAliasAnalysisNode, to: &TypeBasedAliasAnalysisNode) -> Option<TypeBasedAliasAnalysisNode>
 	{
 		Some(TypeBasedAliasAnalysisNode::path(offsetIntoBaseType, from, to))
 	}

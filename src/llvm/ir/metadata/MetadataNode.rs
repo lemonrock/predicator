@@ -28,7 +28,7 @@ impl MetadataNode
 	{
 		MetadataNode(vec!
 		[
-			MetadataKind::string(value)
+			MetadataKind::String(value.into())
 		])
 	}
 }
