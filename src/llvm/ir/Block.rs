@@ -125,7 +125,7 @@ impl<'a> Block<'a>
 	}
 	
 	#[inline(always)]
-	pub fn increment<V: Value>(&self, original: V, increment: u64) -> LLVMValueRefWrapper
+	pub fn increment<LHS: Value, RHS: Value>(&self, original: LHS, increment: RHS) -> LLVMValueRefWrapper
 	{
 		self.arithmetic(original, BinaryArithmetic::Add, increment)
 	}
