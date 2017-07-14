@@ -133,8 +133,8 @@ impl Module
 	#[inline(always)]
 	pub fn addGlobal<'a>(&self, constantType: LLVMTypeRef, cNameIncludingTrailingNul: &[u8]) -> GlobalValue
 	{
-		const AddressSpace: u32 = 0;
+		//const AddressSpace: u32 = 0;
 		
-		GlobalValue::fromLLVMValueRef(unsafe { LLVMAddGlobalInAddressSpace(self.reference, constantType, cNameIncludingTrailingNul.as_ptr() as *const _, AddressSpace) })
+		GlobalValue::fromLLVMValueRef(unsafe { LLVMAddGlobal(self.reference, constantType, cNameIncludingTrailingNul.as_ptr() as *const _) })
 	}
 }

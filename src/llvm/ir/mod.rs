@@ -26,6 +26,7 @@ pub mod values;
 
 
 include!("Block.rs");
+include!("BlockFactory.rs");
 include!("CallParameter.rs");
 include!("FunctionDeclaration.rs");
 include!("FunctionDefinition.rs");

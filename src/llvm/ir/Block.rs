@@ -5,7 +5,6 @@
 pub struct Block<'a>
 {
 	context: &'a Context,
-	functionValue: FunctionValue,
 	basicBlockReference: LLVMBasicBlockRef,
 	builderReference: LLVMBuilderRef,
 }
@@ -33,6 +32,12 @@ impl<'a> Block<'a>
 	pub const PointerAlignment: PowerOfTwoThirtyTwoBit = PowerOfTwoThirtyTwoBit::_8;
 	
 	#[inline(always)]
+	pub fn builderReference(&self) -> LLVMBuilderRef
+	{
+		self.builderReference
+	}
+	
+	#[inline(always)]
 	pub(crate) fn create(context: &'a Context, functionValue: FunctionValue) -> Block<'a>
 	{
 		let basicBlockReference = unsafe { LLVMAppendBasicBlockInContext(context.reference, functionValue.asLLVMValueRef(), b"\0".as_ptr() as *const _) };
@@ -44,16 +49,9 @@ impl<'a> Block<'a>
 		Self
 		{
 			context,
-			functionValue,
 			basicBlockReference,
 			builderReference,
 		}
-	}
-	
-	#[inline(always)]
-	pub fn child(&self) -> Block<'a>
-	{
-		Self::create(self.context, self.functionValue)
 	}
 	
 	#[inline(always)]
@@ -81,9 +79,9 @@ impl<'a> Block<'a>
 	}
 	
 	#[inline(always)]
-	pub fn unconditionalBranchToChild(&self) -> Block<'a>
+	pub fn unconditionalBranchToChild(&self, blockFactory: &BlockFactory<'a>) -> Block<'a>
 	{
-		let child = self.child();
+		let child = blockFactory.child();
 		self.unconditionalBranch(&child);
 		child
 	}
@@ -107,9 +105,9 @@ impl<'a> Block<'a>
 	}
 	
 	#[inline(always)]
-	pub fn bitcastPointerToInt8Pointer(&self, pointerValue: PointerValue) -> PointerValue
+	pub fn bitcastPointerTo(&self, pointerValue: PointerValue, toTypeRef: LLVMTypeRef) -> PointerValue
 	{
-		self.builderReference.bitcastPointerToInt8Pointer(self.context, pointerValue)
+		self.builderReference.bitcastPointerTo(pointerValue, toTypeRef)
 	}
 	
 	#[inline(always)]
@@ -161,17 +159,17 @@ impl<'a> Block<'a>
 	}
 	
 	#[inline(always)]
-	pub fn ifInteger<LHS: ToLLVMValueRefWrapper, RHS: ToLLVMValueRefWrapper>(&self, leftHandSide: LHS, predicate: LLVMIntPredicate, rightHandSide: RHS) -> (ComparisonResultValue, Block<'a>, Block<'a>)
+	pub fn ifInteger<LHS: ToLLVMValueRefWrapper, RHS: ToLLVMValueRefWrapper>(&self, leftHandSide: LHS, predicate: LLVMIntPredicate, rightHandSide: RHS, blockFactory: &BlockFactory<'a>) -> (ComparisonResultValue, Block<'a>, Block<'a>)
 	{
-		let thenBlock = self.child();
-		let elseBlock = self.child();
+		let thenBlock = blockFactory.child();
+		let elseBlock = blockFactory.child();
 		(self.comparison(leftHandSide, predicate,rightHandSide), thenBlock, elseBlock)
 	}
 	
 	#[inline(always)]
-	pub fn ifFalseCarryOn<TrueToBlockReference: ToLLVMBasicBlockRef>(&self, isTrue: ComparisonResultValue, ifTrueBlock: &TrueToBlockReference) -> Block<'a>
+	pub fn ifFalseCarryOn<TrueToBlockReference: ToLLVMBasicBlockRef>(&self, isTrue: ComparisonResultValue, ifTrueBlock: &TrueToBlockReference, blockFactory: &BlockFactory<'a>) -> Block<'a>
 	{
-		let carryOnBlock = self.child();
+		let carryOnBlock = blockFactory.child();
 		self.conditionalBranch(isTrue, ifTrueBlock, &carryOnBlock);
 		carryOnBlock
 	}

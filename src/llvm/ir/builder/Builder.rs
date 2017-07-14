@@ -29,7 +29,7 @@ pub(crate) trait Builder
 	fn phi(self, typeReference: LLVMTypeRef) -> PhiInstructionValue;
 	
 	#[inline(always)]
-	fn bitcastPointerToInt8Pointer(self, context: &Context, pointerValue: PointerValue) -> PointerValue;
+	fn bitcastPointerTo(self, pointerValue: PointerValue, toTypeRef: LLVMTypeRef) -> PointerValue;
 	
 	#[inline(always)]
 	fn getElementPointerAtArrayIndex<ArrayIndex: Value>(self, arrayPointer: PointerValue, arrayIndexInt64: ArrayIndex) -> PointerValue;
@@ -106,9 +106,9 @@ impl Builder for LLVMBuilderRef
 	}
 	
 	#[inline(always)]
-	fn bitcastPointerToInt8Pointer(self, context: &Context, pointerValue: PointerValue) -> PointerValue
+	fn bitcastPointerTo(self, pointerValue: PointerValue, toTypeRef: LLVMTypeRef) -> PointerValue
 	{
-		PointerValue::fromLLVMValueRef(unsafe { LLVMBuildBitCast(self, pointerValue.asLLVMValueRef(), context.typeRef(&LlvmType::int8Pointer()).asLLVMTypeRef(), emptyName!()) })
+		PointerValue::fromLLVMValueRef(unsafe { LLVMBuildBitCast(self, pointerValue.asLLVMValueRef(), toTypeRef, emptyName!()) })
 	}
 	
 	#[inline(always)]
