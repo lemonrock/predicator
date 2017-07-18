@@ -2,6 +2,7 @@
 // Copyright © 2017 The developers of mqtt. See the COPYRIGHT file in the top-level directory of this distribution and at https://raw.githubusercontent.com/lemonrock/mqtt/master/COPYRIGHT.
 
 
+#[macro_export]
 macro_rules! emptyName
 {
 	() =>

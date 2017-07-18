@@ -6,7 +6,7 @@ pub struct Block<'a>
 {
 	context: &'a Context,
 	basicBlockReference: LLVMBasicBlockRef,
-	builderReference: LLVMBuilderRef,
+	pub builderReference: LLVMBuilderRef,
 }
 
 impl<'a> Drop for Block<'a>
@@ -175,30 +175,6 @@ impl<'a> Block<'a>
 	}
 	
 	#[inline(always)]
-	pub fn tailCallMemCpy64(&self, functionReference: FunctionValue, fromInt8PointerValue: PointerValue, toInt8PointerValue: PointerValue, numberOfBytesToCopy: u64, alignment: PowerOfTwoThirtyTwoBit, isVolatile: bool)
-	{
-		let arguments =
-		[
-			(toInt8PointerValue.asLLVMValueRef(), None),
-			(fromInt8PointerValue.asLLVMValueRef(), None),
-			(self.integer64BitUnsigned(numberOfBytesToCopy).asLLVMValueRef(), None),
-			(self.integer32BitUnsigned(alignment.as_u32()).asLLVMValueRef(), None),
-			(self.boolean(isVolatile).asLLVMValueRef(), None),
-		];
-		
-		self.builderReference.call(self.context, functionReference, TailCall::Tail, &HashSet::default(), UsefulLLVMCallConv::LLVMCCallConv, None, &arguments);
-		
-		//  For each group of three, the first operand gives the byte offset of a field in bytes, the second gives its size in bytes, and the third gives its tbaa tag
-		// !{
-		// i64 0, i64 4, !1,
-		// i64 8, i64 4, !2
-		// }
-		//		xxx;
-		//
-		//		unsafe { LLVMSetMetadata(instruction.asLLVMValueRef(), self.context.metadataKind_tbaa_struct(), self.context.xxxx(typeBasedAliasAnalysisNode).asLLVMValueRef()) };
-	}
-	
-	#[inline(always)]
 	pub fn loadPointer(&self, arrayPointer: PointerValue, pointerPath: &PointerPathTypeBasedAliasAnalysisNode) -> PointerValue
 	{
 		PointerValue::fromLLVMValueRefWrapper(self.loadValue(arrayPointer, pointerPath.asPathTypeBasedAliasAnalysisNode(), Self::PointerAlignment))
@@ -239,28 +215,9 @@ impl<'a> Block<'a>
 	}
 	
 	#[inline(always)]
-	fn boolean(&self, value: bool) -> LLVMValueRef
-	{
-		if value
-		{
-			self.booleanTrue()
-		}
-		else
-		{
-			self.booleanFalse()
-		}
-	}
-	
-	#[inline(always)]
 	fn integer32BitUnsigned(&self, value: u32) -> LLVMValueRef
 	{
 		self.context.constantInteger32BitUnsigned(value)
-	}
-	
-	#[inline(always)]
-	fn integer64BitUnsigned(&self, value: u64) -> LLVMValueRef
-	{
-		self.context.constantInteger64BitUnsigned(value)
 	}
 	
 	
