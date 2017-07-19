@@ -15,7 +15,7 @@ use ::std::collections::HashSet;
 
 
 pub mod attributes;
-pub mod builder;
+#[macro_use] pub mod builder;
 pub mod constants;
 pub mod globalFields;
 pub mod metadata;

@@ -131,10 +131,8 @@ impl Module
 	}
 	
 	#[inline(always)]
-	pub fn addGlobal<'a>(&self, constantType: LLVMTypeRef, cNameIncludingTrailingNul: &[u8]) -> GlobalValue
+	pub fn addNamelessGlobal(&self, constantType: LLVMTypeRef) -> GlobalValue
 	{
-		//const AddressSpace: u32 = 0;
-		
-		GlobalValue::fromLLVMValueRef(unsafe { LLVMAddGlobal(self.reference, constantType, cNameIncludingTrailingNul.as_ptr() as *const _) })
+		GlobalValue::fromLLVMValueRef(unsafe { LLVMAddGlobal(self.reference, constantType, emptyName!()) })
 	}
 }

@@ -52,7 +52,7 @@ use ::std::rc::Rc;
 use ::std::slice::from_raw_parts;
 
 
-pub mod ir;
+#[macro_use] pub mod ir;
 pub mod machineCodeJit;
 pub mod orcJit;
 pub mod targets;
