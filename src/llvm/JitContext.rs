@@ -11,9 +11,9 @@ pub struct JitContext<SR: SymbolResolver>
 
 impl<SR: SymbolResolver> JitContext<SR>
 {
-	pub fn new(symbolResolver: SR) -> Result<Self, String>
+	pub fn new(symbolResolver: SR, optimisationLevel: LLVMCodeGenOptLevel) -> Result<Self, String>
 	{
-		let reference = Target::createHostOrcJitStack()?;
+		let reference = Target::createHostOrcJitStack(optimisationLevel)?;
 		
 		Ok
 		(

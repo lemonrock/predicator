@@ -50,6 +50,6 @@ impl SuperContext
 	pub fn newJitContext<SR: SymbolResolver>(&self, symbolResolver: SR) -> Result<(JitContext<SR>, Context), String>
 	{
 		let context = self.newContext()?;
-		JitContext::new(symbolResolver).map(|jitContext| (jitContext, context))
+		JitContext::new(symbolResolver, LLVMCodeGenOptLevel::LLVMCodeGenLevelAggressive).map(|jitContext| (jitContext, context))
 	}
 }

@@ -11,19 +11,19 @@ pub struct Target
 
 impl Target
 {
-	pub fn createHostOrcJitStack() -> Result<LLVMOrcJITStackRef, String>
+	pub fn createHostOrcJitStack(optimisationLevel: LLVMCodeGenOptLevel) -> Result<LLVMOrcJITStackRef, String>
 	{
-		let hostTargetMachine = Self::createHostTargetMachine()?;
+		let hostTargetMachine = Self::createHostTargetMachine(optimisationLevel)?;
 		hostTargetMachine.toOrcJitStack()
 	}
 	
-	pub fn createHostTargetMachine() -> Result<TargetMachine, String>
+	pub fn createHostTargetMachine(optimisationLevel: LLVMCodeGenOptLevel) -> Result<TargetMachine, String>
 	{
 		let hostTarget = Target::obtainTargetForHost()?;
 		let hostCpuName = ::llvmHostCpuName()?;
 		let hostCpuFeatures = ::llvmHostCpuFeatures()?;
 		
-		hostTarget.createTargetMachine(hostCpuName.as_ptr(), hostCpuFeatures.as_ptr(), LLVMCodeGenOptLevel::LLVMCodeGenLevelAggressive, LLVMRelocMode::LLVMRelocStatic, LLVMCodeModel::LLVMCodeModelJITDefault)
+		hostTarget.createTargetMachine(hostCpuName.as_ptr(), hostCpuFeatures.as_ptr(), optimisationLevel, LLVMRelocMode::LLVMRelocStatic, LLVMCodeModel::LLVMCodeModelJITDefault)
 	}
 	
 	#[inline(always)]

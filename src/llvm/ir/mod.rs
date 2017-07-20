@@ -5,7 +5,8 @@
 use super::*;
 use self::builder::*;
 use self::useful::*;
-use ::rust_extra::powersOfTwo::AsU32;
+use ::llvm_sys::target_machine::LLVMCodeGenOptLevel;
+#[allow(unused_imports)] use ::rust_extra::powersOfTwo::AsU32;
 use ::rust_extra::powersOfTwo::PowerOfTwoThirtyTwoBit;
 use ::std::cmp::Eq;
 use ::std::hash::Hash;

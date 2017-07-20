@@ -19,7 +19,7 @@ impl ModuleDefinition
 	pub fn newForHost<S: Into<String> + Clone>(name: S) -> Result<Self, String>
 	{
 		let targetTriple = Target::defaultTargetTriple();
-		let targetMachineDataLayout = Target::createHostTargetMachine()?.targetMachineDataLayout();
+		let targetMachineDataLayout = Target::createHostTargetMachine(LLVMCodeGenOptLevel::LLVMCodeGenLevelNone)?.targetMachineDataLayout();
 		
 		Ok
 		(
