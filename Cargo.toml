@@ -9,21 +9,20 @@ keywords = ["llvm", "jit", "orc", "plugin"]
 categories = ["no-std"]
 license = "AGPL-3.0"
 authors = ["Raphael Cohn <raphael.cohn@stormmq.com>"]
-documentation = "https://github.com/lemonrock/predicator/blob/master/README.md"
 homepage = "https://github.com/lemonrock/predicator"
 repository = "https://github.com/lemonrock/predicator.git"
 exclude = ["*"]
-include = ["README.md", "LICENSE", "COPYRIGHT", "src/**/*.rs", "benches/**/*.rs", "examples/**/*.rs", "tests/**/*.rs", "Cargo.toml", "rustfmt.toml", "clippy.toml", "lib/**/*", "src/**/*.h", "tools/**/*", "bindgen-wrapper.conf.d/**/*", "compile-*.conf.d/**/*"]
+include = ["README.md", "LICENSE", "COPYRIGHT", "src/**/*.rs", "Cargo.toml", "rustfmt.toml", "clippy.toml"]
 readme = "README.md"
 build = "src/build.rs"
 publish = true
-version = "0.0.4"
+version = "0.0.5"
 
 [dependencies]
 cpp = "0.3"
-libc = "0.2"
+libc = "^0.2"
 llvm-sys = "40.0.*"
-maplit = "0.1.4"
+maplit = "^1.0"
 rust-extra = "0.0.17"
 rand = "0.3"
 
